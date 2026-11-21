@@ -1,0 +1,4 @@
+# Prebuilt Nexus (built locally from nexus/v1). No build step.
+[build]
+  publish = "."
+  command = "echo prebuilt"
