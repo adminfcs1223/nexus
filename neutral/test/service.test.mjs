@@ -37,10 +37,10 @@ test('all three draw one map: the same layout and checksum for Souled, ShipBay, 
   assert.deepEqual(a.positions, b.positions); assert.deepEqual(a.landmarks, b.landmarks); assert.equal(new Set([a.checksum, b.checksum, c.checksum, d.checksum]).size, 1);
   const count = (blk) => a.positions.filter((p) => p.block === blk).length;
   assert.deepEqual([count('outbound'), count('inbound'), count('staging'), a.positions.filter((p) => p.kind === 'pallet').length], [36, 30, 2, 66]);
-  assert.deepEqual(a.landmarks.map((l) => l.key), ['exit', 'dock', 'walkway', 'entrance', 'prep']); assert.equal(a.map_version, 3); assert.deepEqual(a.not_drawn, []);
+  assert.deepEqual(a.landmarks.map((l) => l.key), ['exit', 'dock', 'walkway', 'entrance', 'prep']); assert.equal(a.map_version, 4); assert.deepEqual(a.not_drawn, []);
   const at = (code) => { const p = a.positions.find((x) => x.code === code); return [p.x, p.y]; };
-  assert.deepEqual([at('P-01'), at('P-15'), at('P-16'), at('P-30'), at('P-31'), at('P-48'), at('P-49'), at('P-66'), at('STG-01'), at('STG-02')], [[4, 1], [4, 15], [5, 1], [5, 15], [1, 1], [1, 18], [2, 1], [2, 18], [4, 18], [5, 18]]);
-  assert.deepEqual(a.layout.blocks.map((b) => [b.key, b.x, b.y]), [['outbound', [1, 2], [1, 18]], ['walkway', [3, 3], [1, 18]], ['inbound', [4, 5], [1, 15]], ['staging', [4, 5], [18, 18]]]);
+  assert.deepEqual([at('P-01'), at('P-15'), at('P-16'), at('P-30'), at('P-31'), at('P-48'), at('P-49'), at('P-66'), at('STG-01'), at('STG-02')], [[4, 1], [4, 15], [5, 1], [5, 15], [1, 1], [1, 18], [2, 1], [2, 18], [4, 16], [5, 16]]);
+  assert.deepEqual(a.layout.blocks.map((b) => [b.key, b.x, b.y]), [['outbound', [1, 2], [1, 18]], ['walkway', [3, 3], [1, 18]], ['inbound', [4, 5], [1, 15]], ['staging', [4, 5], [16, 16]]]);
   assert.deepEqual(a.positions.filter((p) => p.kind === 'pallet').map((p) => p.code).sort(), Array.from({ length: 66 }, (_, i) => `P-${String(i + 1).padStart(2, '0')}`));
 });
 test('the live floor over HTTP: empty, marked not initialized, and locked for both companies', async () => {

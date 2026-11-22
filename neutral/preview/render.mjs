@@ -15,7 +15,7 @@ const span = (a) => `${a[0]} / ${a[1] + 1}`; const lm = (k) => map.landmarks.fin
 // grid rows: 1 = top doors, 2 = block names, 3 … rows+2 = the floor, rows+3 = bottom landmarks
 const cells = drawn.map((p) => `<div class="c${p.kind === 'staging' ? ' stg' : ''}${used[p.code] ? ' full' : ''}" style="grid-column:${p.x};grid-row:${p.y + 2}">${p.kind === 'pallet' ? p.code.replace('P-', '') : p.code}</div>`).join('');
 const doors = map.landmarks.filter((l) => l.edge).map((l) => `<div class="door" style="grid-column:${span(l.x)};grid-row:${l.edge === 'top' ? 1 : g.rows + 3}">${l.label.toUpperCase()}</div>`).join('');
-const names = ['outbound', 'inbound'].map((k) => `<small style="grid-column:${span(blk(k).x)};grid-row:2">${blk(k).label.toUpperCase()} · ${n(k)}</small>`).join('') + `<small style="grid-column:${span(blk('staging').x)};grid-row:${blk('staging').y[0] + 1};align-self:end">STAGING</small>`;
+const names = ['outbound', 'inbound'].map((k) => `<small style="grid-column:${span(blk(k).x)};grid-row:2">${blk(k).label.toUpperCase()} · ${n(k)}</small>`).join('') + `<small style="grid-column:${span(blk('staging').x)};grid-row:${blk('staging').y[0] + 3}">STAGING</small>`;
 const walk = `<div class="walk" style="grid-column:${span(lm('walkway').x)};grid-row:3 / ${g.rows + 3}"><span>WALKWAY</span></div>`;
 const html = `<!doctype html><meta charset="utf-8"><style>
 body{margin:0;background:#0d1014;color:#e8eaed;font:700 13px Arial,sans-serif;padding:28px;width:760px}

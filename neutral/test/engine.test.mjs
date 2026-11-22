@@ -25,7 +25,7 @@ test('the final approved map: P-01..P-66 with no gaps, 2 staging, each in its ph
     assert.deepEqual(await line(4), run(1, 15)); assert.deepEqual(await line(5), run(16, 30));
     const y = async (code) => one(`select map_y from nexus.locations where warehouse = $1 and code = $2`, [wh, code]);
     assert.deepEqual([await y('P-01'), await y('P-15'), await y('P-16'), await y('P-30'), await y('P-31'), await y('P-48'), await y('P-49'), await y('P-66')], [1, 15, 1, 15, 1, 18, 1, 18], 'every column runs top to bottom');
-    assert.deepEqual((await q(`select code, map_x, map_y from nexus.locations where warehouse = $1 and kind = 'staging' order by code`, [wh])), [{ code: 'STG-01', map_x: 4, map_y: 18 }, { code: 'STG-02', map_x: 5, map_y: 18 }], 'staging side by side at the lower right');
+    assert.deepEqual((await q(`select code, map_x, map_y from nexus.locations where warehouse = $1 and kind = 'staging' order by code`, [wh])), [{ code: 'STG-01', map_x: 4, map_y: 16 }, { code: 'STG-02', map_x: 5, map_y: 16 }], 'staging directly beneath P-15 and P-30');
     assert.equal(await one(`select count(*)::int from (select map_x, map_y from nexus.locations where warehouse = $1 and map_x is not null group by 1, 2 having count(*) > 1) d`, [wh]), 0, 'no two locations share a square');
   }
 });
@@ -41,7 +41,7 @@ test('the live floor starts with nothing on it, says so, and refuses assign / mo
   assert.deepEqual(await q(`select 1 from nexus.pallets where warehouse = 'HILLSBOROUGH'`), [], 'not even a pallet record was made');
   await assert.rejects(pool.query(`update nexus.warehouses set moves_enabled = true where code = 'HILLSBOROUGH'`), /check/, 'the database itself refuses to switch moves on before the baseline is verified');
   const mapLive = await one(`select nexus.api_map($1)`, [live]), mapTest = await one(`select nexus.api_map($1)`, [kSouled]);
-  assert.equal(mapLive.checksum, mapTest.checksum, 'the test floor draws exactly the live floor'); assert.equal(mapLive.positions.length, 69); assert.equal(mapLive.not_drawn.length, 0); assert.equal(mapLive.map_version, 3);
+  assert.equal(mapLive.checksum, mapTest.checksum, 'the test floor draws exactly the live floor'); assert.equal(mapLive.positions.length, 69); assert.equal(mapLive.not_drawn.length, 0); assert.equal(mapLive.map_version, 4);
   assert.deepEqual(mapLive.layout.grid, { cols: 5, rows: 18, origin: 'top-left', x: 'left to right', y: 'top to bottom' });
   assert.deepEqual(mapLive.landmarks.map((l) => `${l.key}:${l.at}`), ['exit:top-left', 'dock:top-right', 'walkway:centre', 'entrance:bottom-centre', 'prep:bottom-right']);
 });

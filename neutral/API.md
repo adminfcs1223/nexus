@@ -34,14 +34,14 @@ No production system calls it.
 | `PUT /v1/calendar/{id}` `{direction, starts_at, ends_at?, pallets?, status?, reference?, note?}` | calendar | Create or change the caller's own event, keyed by its own system's id. `reference` and `note` stay with the owner. |
 | `DELETE /v1/calendar/{id}` | calendar | Mark the caller's own event cancelled. |
 
-## Drawing the map (`GET /v1/map`, map version 3)
-Final approved layout: `P-01` to `P-66` with no gaps, plus `STG-01` and `STG-02`. Draw from the response, never from a hard-coded list.
+## Drawing the map (`GET /v1/map`, map version 4)
+Final approved layout (version 4 moved staging to sit directly beneath P-15 and P-30; numbering unchanged): `P-01` to `P-66` with no gaps, plus `STG-01` and `STG-02`. Draw from the response, never from a hard-coded list.
 - `layout.grid`: 5 columns by 18 rows, origin top-left, `x` left to right, `y` top to bottom.
-- `layout.blocks`: outbound `x` 1-2, `y` 1-18 · walkway `x` 3 · inbound `x` 4-5, `y` 1-15 · staging `x` 4-5, `y` 18.
+- `layout.blocks`: outbound `x` 1-2, `y` 1-18 · walkway `x` 3 · inbound `x` 4-5, `y` 1-15 · staging `x` 4-5, `y` 16 (directly beneath P-15 and P-30).
 - Each position has `code`, `kind`, `block`, `x`, `y` (its square on that grid), `capacity`, `status`. `RCV-DOCK` is the dock itself: no square, do not draw it as a pallet position.
 - `landmarks`: Exit top-left, Dock top-right, Walkway centre, Entrance bottom-centre, Prep area bottom-right; each has `at`, and `edge` + `x` where it sits on the top or bottom edge.
 - `map_version` and `checksum`: store them. A `map_changed` entry in `/v1/changes`, or a different checksum, means fetch the map again.
-- Current staging value: version 3, checksum `2d02e1d204b647be1e690c805e168f9822294e4430e8cea7cc7c5bef23f3439d`.
+- Current staging value: version 4, checksum `be3cc8f3e9134cb4dfe7d3ac41773bc5d231ed56b4a42c05f5939467d67c8c4f`.
 
 ## Error codes
 | HTTP | Codes |
