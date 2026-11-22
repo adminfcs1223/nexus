@@ -21,31 +21,37 @@ const saveFlight = (f) => { try { f ? localStorage.setItem(FLIGHT, JSON.stringif
 export async function labelPallets(pskus) { const rows = await rpc('nexus_label_pallets', { p_pskus: pskus }); const got = attachCartons(rows, rows.flatMap((p) => p._cartons)); if (!got.ok) throw new Error(`The carton list for ${got.problems[0].psku || 'a pallet'} does not add up (${got.problems[0].problems[0]}). Nothing was printed.`); return got.pallets; }
 export const LabelView = ({ html, w, h, inch }) => <div className="labelview" style={{ '--u': `${inch}px`, width: inch * w, height: inch * h }} dangerouslySetInnerHTML={{ __html: html }} />;
 
-export default function Receiving({ me }) {
-  const [org, setOrg] = useState(null); const [open, setOpen] = useState(() => loadFlight()?.inbound || null);
+export default function Receiving({ me, sites: sd }) {
+  const [site, setSite] = useState(null); const [open, setOpen] = useState(() => loadFlight()?.inbound || null);
   const [brands, err] = useRpc('nexus_receiving_brands', {}, [], 20000);
-  const flight = loadFlight(); const active = org || (flight && (brands || []).find((b) => b.id === flight.payload.p_org)) || null;   // an unsettled Receive brings its shipment back up
-  const [ships, , reload] = useRpc(active ? 'nexus_receiving' : null, { p_org: active?.id }, [active?.id], 8000);
+  // the picker is by site (ShipBay, Souled, …); the brand rides along as "c/o". Brands no site has taken yet are grouped so nothing is hidden.
+  const by = (ids) => (brands || []).filter((b) => ids.includes(b.id)); const sum = (l, k) => l.reduce((a, b) => a + b[k], 0); const first = (l) => l.map((b) => b.next).filter(Boolean).sort()[0];
+  const tiles = [...(sd?.sites || []).filter((x) => x.active).map((x) => ({ id: x.id, name: x.name, kind: x.kind, list: by(x.org_ids) })), ...((sd?.unassigned || []).length ? [{ id: null, name: 'No site yet', list: by(sd.unassigned.map((b) => b.id)) }] : [])]
+    .map((t) => ({ ...t, open: sum(t.list, 'open'), pallets: sum(t.list, 'pallets'), next: first(t.list), co: t.list.filter((b) => b.open).map((b) => b.name) })).filter((t) => t.id || t.open);
+  const flight = loadFlight(); const active = site || (flight && tiles.find((t) => t.list.some((b) => b.id === flight.payload.p_org))) || null;   // an unsettled Receive brings its shipment back up
+  const [ships, , reload] = useRpc(active ? 'nexus_receiving_site' : null, { p_site: active?.id ?? null }, [active?.id ?? (active ? 'none' : '')], 8000);
   const s = open && (ships || []).find((x) => x.id === open);
-  if (active && s) return <Shipment me={me} org={active} s={s} reload={reload} back={() => { setOpen(null); setOrg(active); }} />;
+  if (active && s) return <Shipment me={me} site={active} org={{ id: s.org_id, name: s.brand }} s={s} reload={reload} back={() => { setOpen(null); setSite(active); }} />;
   return (
     <>
-      <div className="head"><div>{active && <button className="back" onClick={() => setOrg(null)}>‹ Receiving</button>}<h1>{active ? active.name : 'Receiving'}</h1></div>
-        <div className="glance"><div><b>{num((brands || []).reduce((a, b) => a + b.open, 0))}</b><small>Shipments to receive</small></div><div><b>{num((brands || []).reduce((a, b) => a + b.pallets, 0))}</b><small>Pallets expected</small></div></div></div>
+      <div className="head"><div>{active && <button className="back" onClick={() => setSite(null)}>‹ Receiving</button>}<h1>{active ? active.name : 'Receiving'}</h1></div>
+        <div className="glance"><div><b>{num(active ? active.open : sum(tiles, 'open'))}</b><small>Shipments to receive</small></div><div><b>{num(active ? active.pallets : sum(tiles, 'pallets'))}</b><small>Pallets expected</small></div></div></div>
       {err && <Msg m={{ text: err }} />}
-      {!active && <><h2>Who is the shipment for?</h2><div className="tilesbig" data-testid="recv-brands">{(brands || []).map((b) => (
-        <button key={b.id} disabled={!b.open} onClick={() => setOrg(b)}><b>{b.name}</b><span>{b.open ? `${b.open} shipment${b.open === 1 ? '' : 's'} · ${b.pallets} pallets · next ${day(`${b.next}T12:00`)}` : 'Nothing booked'}</span></button>))}</div>
-        <p className="sm">A shipment shows here once it is on the calendar. What is in it comes from the brand's own WMS.</p></>}
+      {!active && <><h2>Who is the shipment for?</h2><div className="tilesbig" data-testid="recv-brands">{tiles.map((t) => (
+        <button key={t.id || 'none'} disabled={!t.open} onClick={() => setSite(t)}><b>{t.name}</b><span>{t.open ? `${t.open} shipment${t.open === 1 ? '' : 's'} · ${t.pallets} pallets · next ${day(`${t.next}T12:00`)}` : 'Nothing booked'}</span>{t.co.length > 0 && <span>c/o {t.co.join(', ')}</span>}</button>))}</div>
+        {sd && tiles.length === 0 && <div className="empty">No site is set up yet. Add one under Sites.</div>}
+        <p className="sm">A shipment shows here once its site has it on the calendar. What is in it comes from that site's own WMS.</p></>}
       {active && <><h2>Which shipment?</h2>{(ships || []).map((x) => { const done = x.status === 'received' || x.status === 'discrepancy'; const stored = x.pallet_list.filter((p) => p.status === 'stored').length; return (
         <section key={x.id} className={`shiprow${done ? ' done' : ''}`} data-testid="recv-ship">
-          <div className="row"><h3>{x.reference}</h3>{done ? <span className="pill stored">{x.status === 'received' ? 'Fully received' : 'Received with differences'}</span> : !x.approved ? <span className="pill counted">Not confirmed yet</span> : <button className="btn primary" onClick={() => setOpen(x.id)}>{x.pallet_list.length ? 'Continue receiving' : 'Receive'}</button>}</div>
+          <div className="row"><div><div className="co">c/o {x.brand}</div><h3>{x.reference}</h3></div>{done ? <span className="pill stored">{x.status === 'received' ? 'Fully received' : 'Received with differences'}</span> : !x.approved ? <span className="pill counted">Not confirmed yet</span> : <button className="btn primary" onClick={() => setOpen(x.id)}>{x.pallet_list.length ? 'Continue receiving' : 'Receive'}</button>}</div>
           <div className="facts"><span>Expected<b>{x.expected_at ? day(`${x.expected_at}T12:00`) : '—'}</b></span><span>Pallets booked<b>{x.pallets}</b></span><span>Received so far<b>{x.pallet_list.length}</b></span><span>Put away<b>{stored}</b></span></div>
-          <div className="sm">{x.lines.map((l) => `${num(l.qty)} × ${l.sku} ${l.name}`).join(' · ') || 'The WMS has not listed what is in this shipment.'}{x.origin ? ` · from ${x.origin}` : ''}{x.notes ? ` · ${x.notes}` : ''}</div>
+          <div className="sm">{x.lines.map((l) => `${num(l.qty)} × ${l.sku} ${l.name}`).join(' · ') || `${active.name}'s WMS has not listed what is in this shipment.`}{x.origin ? ` · from ${x.origin}` : ''}{x.notes ? ` · ${x.notes}` : ''}</div>
         </section>); })}{ships && ships.length === 0 && <div className="empty">Nothing booked for {active.name}.</div>}</>}
     </>);
 }
 
-function Shipment({ me, org, s, reload, back }) {
+function Shipment({ me, site, org, s, reload, back }) {
+  const wms = site.id ? `${site.name}'s WMS` : `${org.name}'s WMS`;   // who holds the booking and hears the result
   const [products, setProducts] = useState(null); const [lines, setLines] = useState(() => [newLine(s.lines[0]?.sku_id || '')]); const [count, setCount] = useState(1); const [mode, setMode] = useState('partial'); const [holdWhy, setHoldWhy] = useState('');
   const [key, setKey] = useState(() => crypto.randomUUID()); const [msg, setMsg] = useState(null); const [busy, setBusy] = useState(false); const [sent, setSent] = useState(() => { const f = loadFlight(); return f && f.inbound === s.id ? f : null; });
   const [hold, setHold] = useState(null);   // carton labels printed before Receive: { pskus, sig, full }
@@ -103,16 +109,16 @@ function Shipment({ me, org, s, reload, back }) {
   const printCartons = async (ps, only) => { if (!(await printCartonLabels(ps, brandOf, only || null, csize, cturn))) return fail('The print window did not open for the carton labels. Nothing was printed; press Print again.'); if (!only) { setPrinted((x) => ({ ...x, cartons: true })); try { await rpc('nexus_labels_printed', { p_kind: 'carton', p_codes: ps.flatMap((p) => cartonCodes(p).filter((c) => !c.cle).map((c) => c.code)) }); } catch { /* printed */ } } };
   const reprint = async (ps, what) => { try { const got = await labelPallets([ps]); if (what === 'pallet') await printPallet(got); else await printCartons(got); } catch (x) { fail(x.message); } };
   const put = async (e) => { e.preventDefault(); try { const r = await rpc('nexus_putaway', { p_psku: psku, p_location: loc }); setMsg({ kind: 'ok', text: `${r.psku} put away at ${r.location}.` }); setPsku(''); setLoc(''); reload(); } catch (x) { fail(x.message); } };
-  const finish = async () => { try { const r = await rpc('nexus_receiving_finish', { p_inbound: s.id }); setMade(null); setMsg({ kind: 'ok', text: r.status === 'received' ? `${s.reference} is fully received: ${r.pallets} pallets. ${org.name}'s WMS now shows it as received.` : `${s.reference} is received with differences (${r.pallets} of ${r.pallets_booked} pallets, ${r.cartons} of ${r.cartons_booked} cartons). ${org.name}'s WMS shows the difference.` }); reload(); } catch (x) { fail(x.message); } };
+  const finish = async () => { try { const r = await rpc('nexus_receiving_finish', { p_inbound: s.id }); setMade(null); setMsg({ kind: 'ok', text: r.status === 'received' ? `${s.reference} is fully received: ${r.pallets} pallets. ${wms} now shows it as received.` : `${s.reference} is received with differences (${r.pallets} of ${r.pallets_booked} pallets, ${r.cartons} of ${r.cartons_booked} cartons). ${wms} shows the difference.` }); reload(); } catch (x) { fail(x.message); } };
   const madeCartons = made ? made.reduce((a, p) => a + cartonCodes(p).filter((c) => !c.cle).length, 0) : 0; const z = parseSize(csize);
   const taken = lines.map((l) => l.sku).filter(Boolean);
   return (
     <>
-      <div className="head"><div><button className="back" onClick={back}>‹ {org.name}</button><h1>{s.reference}</h1></div>
+      <div className="head"><div><button className="back" onClick={back}>‹ {site.name}</button><h1>{s.reference}</h1><div className="co" data-testid="recv-co">{site.name} · c/o {org.name}</div></div>
         <div className="glance"><div><b>{s.pallets}</b><small>Pallets booked</small></div><div><b>{s.pallet_list.length}</b><small>Received</small></div><div><b className={waiting.length ? 'hot' : ''}>{stored}</b><small>Put away</small></div></div></div>
       {sent && !busy && <div className="strip move" data-testid="recv-unsure"><b>A Receive was sent from this station and its answer never came back.</b> Do not enter it again.<button className="btn sm primary" onClick={() => send(sent)}>Check that Receive</button></div>}
       <Msg m={msg} />
-      {done && <div className="strip ok" data-testid="recv-done">{s.status === 'received' ? 'Fully received' : 'Received with differences'} · {stamp(s.received_at)}. {org.name}'s WMS has it.</div>}
+      {done && <div className="strip ok" data-testid="recv-done">{s.status === 'received' ? 'Fully received' : 'Received with differences'} · {stamp(s.received_at)}. {wms} has it.</div>}
       {made && <section className="printbox" data-testid="recv-print"><h2>Labels for {made.length === 1 ? made[0].psku : `${made[0].psku} → ${made[made.length - 1].psku}`}</h2>
         {printed.mismatch && <div className="strip bad">The carton labels printed before Receive are not what was received. Take them off and print them again from here.</div>}
         <div className="printrow"><div><b>{made.length} pallet label{made.length > 1 ? 's' : ''} · 4 × 6</b><span className="sm">Paper 4 × 6 in · margins none · scale 100%</span></div><button className={`btn ${printed.pallet ? '' : 'primary'}`} onClick={() => printPallet(made)}>{printed.pallet ? 'Print again' : 'Print'}</button></div>
@@ -147,7 +153,7 @@ function Shipment({ me, org, s, reload, back }) {
           {!done && <section><h2>2 · Put away</h2>
             <form className="acts" onSubmit={put} data-testid="recv-put"><input aria-label="Pallet" placeholder="Scan pallet label" value={psku} onChange={(e) => setPsku(e.target.value)} /><input aria-label="Position" placeholder="Scan position code" value={loc} onChange={(e) => setLoc(e.target.value)} /><button className="btn primary" disabled={!psku.trim() || !loc.trim()}>Put away</button></form>
             <p className="sm">{waiting.length ? `${waiting.length} pallet${waiting.length === 1 ? '' : 's'} of this shipment still to put away.` : s.pallet_list.length ? 'Every pallet received so far is in a position.' : 'Nothing received yet.'} Scan the pallet's label, then the position's code from the pallet-jack sheet.</p></section>}
-          {!done && <section><h2>3 · Complete</h2><p className="sm">When the last pallet is received and all of them are in a position, complete the shipment. That tells {org.name}'s WMS it went through the whole receiving process.</p>
+          {!done && <section><h2>3 · Complete</h2><p className="sm">When the last pallet is received and all of them are in a position, complete the shipment. That tells {wms} it went through the whole receiving process.</p>
             <div className="acts"><button className="btn primary" onClick={finish} disabled={!s.closed || waiting.length > 0}>Complete receiving</button>{!s.closed && <span className="sm">Waiting for the last pallet</span>}{s.closed && waiting.length > 0 && <span className="sm">Waiting for put-away</span>}</div></section>}
         </div>
         <div>
@@ -163,7 +169,7 @@ function Shipment({ me, org, s, reload, back }) {
               <div className="acts"><button type="button" className="btn" disabled={locked} onClick={() => printFirst()}>{hold?.full && !stale ? 'Print again' : 'Print carton labels now'} · {num(total * n)}</button><button type="button" className="btn sm" disabled={locked} onClick={() => printFirst([firstLabelled(sample)?.seq])}>Test with 1 label</button>
                 {hold && <button type="button" className="link sm" disabled={locked} onClick={() => { setHold(null); setKey(crypto.randomUUID()); }}>Throw those labels away and start over</button>}</div></>}
           </section>}
-          <section><h2>Booked by {org.name}'s WMS</h2><div className="facts wide"><span>Expected<b>{s.expected_at ? day(`${s.expected_at}T12:00`) : '—'}</b></span><span>Pallets<b>{s.pallets}</b></span><span>Cartons<b>{s.cartons || '—'}</b></span></div>
+          <section><h2>Booked by {wms} · c/o {org.name}</h2><div className="facts wide"><span>Expected<b>{s.expected_at ? day(`${s.expected_at}T12:00`) : '—'}</b></span><span>Pallets<b>{s.pallets}</b></span><span>Cartons<b>{s.cartons || '—'}</b></span></div>
             {s.lines.map((l) => <div className="hist" key={l.sku_id}><b>{num(l.qty)} units</b> {l.sku}<span>{l.name}</span></div>)}{s.origin && <p className="sm">From {s.origin}</p>}{s.notes && <p className="sm">{s.notes}</p>}</section>
           <section><h2>Pallets received · {s.pallet_list.length}</h2>{s.pallet_list.map((p) => <div className="pal" key={p.psku} data-testid="recv-pallet"><div className="row"><button className="link code" onClick={() => setPsku(p.psku)}>{p.psku}</button><Pill p={p} /></div>
             <div className="sm">{p.item} · {p.cartons ?? 'no count'} cartons · {p.position ? (p.status === 'stored' ? `at ${p.position}` : `suggested ${p.position}`) : 'no position yet'} · label printed {p.label_prints}×{p.held ? ` · HOLD: ${p.hold_reason}` : ''}</div>

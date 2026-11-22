@@ -25,3 +25,10 @@ page per pallet; FIFO marked under construction; Cycle counts; Connections (two 
 - `test/local/` runs everything with no production access: `./run.sh` (throwaway Postgres on 127.0.0.1:54318, synthetic data,
   the real nexus_* functions and the real WMS receiving functions, the real screens in Chromium) and `node --test db.test.mjs`.
   `test/e2e/` is the older run and still describes the v1 screens.
+
+## Sites (branch `nexus-sites`, 2026-11-22) — built and tested locally, NOT live
+A site is a WMS that uses the warehouse (ShipBay, Souled). Receiving, Calendar, Dashboard and Pallets show the site first and
+the brand as "c/o". The Connections tab is now **Sites**: each site's brands, how it connects (same database = always live;
+its own system = two keys and a "last heard from"), and an **Add a site** wizard that ends on a connection check.
+`database/20261122_nexus_sites.sql` is not applied yet; it is additive and seeds ShipBay and Souled from `orgs.external_wms`.
+Printed labels are unchanged (brand-first).

@@ -1,6 +1,6 @@
 -- Synthetic floor: made-up brands, products and pallets. Nothing here is a real client's stock.
 insert into profiles (id, role, full_name, email) values ('aa000000-0000-4000-8000-000000000002', 'shipbay_admin', 'Test Admin', 'admin@example.test'), ('aa000000-0000-4000-8000-000000000001', 'wms_employee', 'Test Floor', 'floor@example.test');
-insert into orgs (id, name, slug) values ('bb000000-0000-4000-8000-00000000000a', 'Sample Records', 'a'), ('bb000000-0000-4000-8000-00000000000b', 'Sample Sneakers', 'b'), ('bb000000-0000-4000-8000-00000000000c', 'Sample Candles', 'c');
+insert into orgs (id, name, slug, external_wms) values ('bb000000-0000-4000-8000-00000000000a', 'Sample Records', 'a', false), ('bb000000-0000-4000-8000-00000000000b', 'Sample Sneakers', 'b', true), ('bb000000-0000-4000-8000-00000000000c', 'Sample Candles', 'c', false);
 insert into locations (code, zone, kind) select 'P-' || lpad(n::text, 2, '0'), case when n <= 36 then 'inbound' else 'outbound' end, 'pallet' from generate_series(1, 72) n;
 insert into locations (code, zone, kind) values ('STG-01', 'staging', 'floor'), ('STG-02', 'staging', 'floor');
 insert into skus (id, org_id, sku, name) values ('cc000000-0000-4000-8000-000000000001', 'bb000000-0000-4000-8000-00000000000a', 'REC-LP-135', 'Sample LP, volume 135'), ('cc000000-0000-4000-8000-000000000002', 'bb000000-0000-4000-8000-00000000000a', 'REC-MAILER', 'Record mailer'),
