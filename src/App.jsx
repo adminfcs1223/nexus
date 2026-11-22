@@ -1,7 +1,8 @@
 // Sign-in shell. The screens live in Nexus.jsx and take the signed-in profile.
 import { useEffect, useState } from 'react';
-import { supabase, NEXUS_ROLES, EMBED, WMS_ORIGINS, setToken } from './lib.js';
+import { supabase, NEXUS_ROLES, EMBED, WINDOW, WMS_ORIGINS, setToken } from './lib.js';
 import Nexus from './Nexus.jsx';
+import Window from './Window.jsx';
 
 // Inside a WMS: no sign-in here. Ask the parent for the signed-in user's access token; accept it only from a known WMS origin.
 function Embedded() {
@@ -20,6 +21,7 @@ function Embedded() {
 }
 
 export default function App() {
+  if (WINDOW) return <Window />;
   if (EMBED) return <Embedded />;
   return <Standalone />;
 }
