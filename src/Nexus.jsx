@@ -7,10 +7,11 @@ import Floor from './Floor.jsx';
 import CalendarPage, { MonthGrid, useMonth, staffApi, nextDays } from './Calendar.jsx';
 import Labels from './Labels.jsx';
 import Receiving from './Receiving.jsx';
+import { Putaway } from './Dock.jsx';
 import { Ring, Msg, Pill, PalletEditor, what } from './parts.jsx';
 
 // [key, label, parent]: Calendar and Labeling sit under Dashboard
-const TABS = [['dashboard', 'Dashboard'], ['calendar', 'Calendar', 'dashboard'], ['labels', 'Labeling', 'dashboard'], ['receiving', 'Receiving'], ['floor', 'Floor'], ['pallets', 'Pallets'], ['fifo', 'FIFO'], ['counts', 'Cycle counts'], ['connections', 'Connections']];
+const TABS = [['dashboard', 'Dashboard'], ['calendar', 'Calendar', 'dashboard'], ['labels', 'Labeling', 'dashboard'], ['receiving', 'Receiving'], ['putaway', 'Put-away'], ['floor', 'Floor'], ['pallets', 'Pallets'], ['fifo', 'FIFO'], ['counts', 'Cycle counts'], ['connections', 'Connections']];
 const RESULT = { pending: 'Not counted yet', found: 'Found', misplaced: 'Wrong position', missing: 'Missing', unexpected: 'Not expected here' };
 
 export default function Nexus({ me, onSignOut, embed }) {
@@ -33,6 +34,7 @@ export default function Nexus({ me, onSignOut, embed }) {
         {tab === 'calendar' && <CalendarPage api={staffApi} canEdit={me.role !== 'wms_employee'} />}
         {tab === 'labels' && <Labels brands={brands} />}
         {tab === 'receiving' && <Receiving me={me} />}
+        {tab === 'putaway' && <Putaway />}
         {tab === 'floor' && <Floor me={me} openPallet={openPallet} />}
         {tab === 'pallets' && <Pallets brands={brands} me={me} open={pallet} setOpen={setPallet} />}
         {tab === 'fifo' && <><div className="head"><h1>FIFO</h1></div><div className="construction" data-testid="construction"><b>Under construction</b><span>This page is being rebuilt.</span></div></>}

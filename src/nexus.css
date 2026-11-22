@@ -64,6 +64,14 @@ input:not([type=checkbox]), select { height: 38px; padding: 0 12px; border: 1px 
 .tilesbig { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 14px; } .tilesbig button { text-align: left; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--red); padding: 22px 20px; cursor: pointer; display: grid; gap: 8px; }
 .tilesbig button:hover:not(:disabled) { border-color: #fff; } .tilesbig b { font-family: var(--logo); font-weight: 700; font-size: 16px; text-transform: uppercase; } .tilesbig span { color: var(--mut); font-weight: 700; font-size: 12.5px; } .tilesbig button:disabled { border-left-color: var(--line); opacity: .5; cursor: default; }
 .shiprow.done { opacity: .7; }
+/* put-away scan */
+.scanflow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 22px; }
+.scanflow form { display: grid; grid-template-columns: 44px 1fr; gap: 4px 12px; align-items: center; background: var(--panel); border: 1px solid var(--line); padding: 16px; }
+.scanflow form.now { border-color: var(--red); } .scanflow form.off { opacity: .45; }
+.scanflow form > span { font-family: var(--logo); font-size: 28px; font-weight: 800; color: var(--mut); grid-row: span 2; align-self: start; }
+.scanflow label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); }
+.scanflow input { height: 52px !important; font-family: var(--mono); font-size: 22px; } .scanflow .what { grid-column: 2; font-size: 13px; font-weight: 700; }
+@media (max-width: 900px) { .scanflow { grid-template-columns: 1fr; } }
 /* floor map */
 .floor { display: grid; grid-template-columns: auto minmax(320px, 1fr); gap: 24px; align-items: start; margin-bottom: 20px; }
 .plan { display: grid; grid-template-columns: auto 56px auto; gap: 0 10px; background: var(--panel); border: 1px solid var(--line); padding: 18px 22px; width: max-content; max-width: 100%; }
@@ -94,6 +102,7 @@ input:not([type=checkbox]), select { height: 38px; padding: 0 12px; border: 1px 
 .cal.mini { border: 0; background: none; } .cal.mini .calhead { padding: 0 0 10px; border: 0; } .cal.mini .calhead b { font-size: 12px; } .cal.mini .dow span { padding: 4px 0; text-align: center; border: 0; font-size: 10px; } .cal.mini .days { background: none; gap: 2px; }
 .cal.mini .d { min-height: 34px; padding: 3px; align-items: center !important; justify-content: center; gap: 0; background: #12151a; } .cal.mini .d > span { font-size: 11px; } .cal.mini .d.out { background: none; } .cal.mini .d.today > span { width: 20px; min-width: 20px; max-width: 20px; height: 20px; line-height: 20px; border-radius: 10px; align-self: center; } .cal.mini .d em { font-style: normal; font-size: 9.5px; font-weight: 700; color: #fff; background: var(--red); padding: 0 5px; border-radius: 8px; line-height: 13px; } .cal.mini .d.has { background: rgba(225, 37, 55, .14); }
 .preview { background: #2a2e35; padding: 14px; display: grid; place-items: center; }
+.editor .item { display: grid; grid-template-columns: minmax(0, 1fr) 90px auto; gap: 8px; align-items: center; margin-bottom: 8px; }
 /* a window inside another site */
 .window { min-height: 100vh; } .wintop { display: flex; align-items: center; gap: 18px; background: var(--rail); border-bottom: 3px solid var(--red); padding: 0 18px; } .wintop img { height: 40px; } .wintop nav { display: flex; flex: 1; } .wintop nav button { border-left: 0; border-bottom: 3px solid transparent; padding: 16px 16px 13px; } .wintop nav button.on { color: #fff; border-bottom-color: #fff; } .wintop .who { border: 0; padding: 0; text-align: right; }
 .window main, main.embed { padding: 18px; }

@@ -14,7 +14,7 @@ const norm = (t) => t.replace(/\s+/g, ' ').trim();
   const tab = async (n) => { await p.locator('.top nav button', { hasText: new RegExp(`^${n}$`) }).click(); await wait(900); };
   await p.goto('http://127.0.0.1:4611/'); await wait(1800);
 
-  ok(norm(await p.locator('.top nav').innerText()).toUpperCase() === 'DASHBOARD CALENDAR LABELING RECEIVING FLOOR PALLETS FIFO CYCLE COUNTS CONNECTIONS', `tabs: ${norm(await p.locator('.top nav').innerText())}`);
+  ok(norm(await p.locator('.top nav').innerText()).toUpperCase() === 'DASHBOARD CALENDAR LABELING RECEIVING PUT-AWAY FLOOR PALLETS FIFO CYCLE COUNTS CONNECTIONS', `tabs: ${norm(await p.locator('.top nav').innerText())}`);
   ok((await p.locator('h1').innerText()).toUpperCase() === 'DASHBOARD', 'first page is Dashboard');
   ok(/Orbitron/.test(await p.locator('h1').evaluate((n) => getComputedStyle(n).fontFamily)) && await p.evaluate(() => document.fonts.check('800 26px "Orbitron"')), 'titles use the logo lettering (font loaded)');
   ok(/^Arial/.test(await p.locator('.glance small').first().evaluate((n) => getComputedStyle(n).fontFamily)) && (await p.locator('.glance small').first().evaluate((n) => getComputedStyle(n).fontWeight)) === '700', 'subtext is bold Arial');
@@ -26,8 +26,8 @@ const norm = (t) => t.replace(/\s+/g, ' ').trim();
   await tab('Calendar'); const d2 = new Date(); d2.setDate(d2.getDate() + 2); const k2 = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, '0')}-${String(d2.getDate()).padStart(2, '0')}`;
   if (d2.getMonth() !== new Date().getMonth() && (await p.locator(`[data-testid="day-${k2}"]`).count()) === 0) { await p.getByLabel('Next month').click(); await wait(); }
   await p.locator(`[data-testid="day-${k2}"]`).click(); await wait(400); ok((await p.locator('[data-testid=ship-row]').count()) === 2, 'calendar: the day shows its two booked shipments');
-  await p.getByRole('button', { name: 'Book a shipment for this day' }).click(); await p.getByLabel('Reference').fill('Local test booking'); await p.locator('[data-testid=ship-form] input[type=number]').first().fill('5'); await p.getByRole('button', { name: 'Book it' }).click(); await wait(1000);
-  ok((await p.locator('[data-testid=ship-row]').count()) === 3, 'calendar: a shipment can be booked from Nexus'); await shot('2-calendar');
+  await p.getByRole('button', { name: 'Book a shipment for this day' }).click(); await p.getByLabel('Reference').fill('Local test booking'); await wait(500); await p.locator('[data-testid=ship-items]').getByLabel('Item').selectOption({ index: 1 }); await p.getByLabel('Units expected').fill('240'); await p.locator('[data-testid=ship-form] input[type=number]').first().fill('5'); await p.getByRole('button', { name: 'Book it' }).click(); await wait(1000);
+  ok((await p.locator('[data-testid=ship-row]').count()) === 3 && /240 × /.test(await p.locator('.calwrap aside').innerText()), 'calendar: a shipment is booked from Nexus with what is on it'); await shot('2-calendar');
 
   await tab('Labeling'); ok((await p.locator('[data-testid=label-table] tbody tr').count()) > 100, 'labeling: every pallet and carton label is on file');
   await p.getByLabel('Kind').selectOption('pallet'); await wait(900); ok((await p.locator('[data-testid=label-table] tbody tr').count()) === 18, 'labeling: 18 pallet labels');
@@ -77,6 +77,8 @@ const norm = (t) => t.replace(/\s+/g, ' ').trim();
   for (let i = 0; i < 4; i++) { await p.locator('[data-testid=recv-put]').getByLabel('Pallet').fill(got[i]); await p.locator('[data-testid=recv-put]').getByLabel('Position').fill(spots[i]); await p.getByRole('button', { name: 'Put away', exact: true }).click(); await wait(900); }
   await wait(600); await shot('15-receiving'); await p.getByRole('button', { name: 'Complete receiving' }).click(); await wait(1200);
   ok(/received with differences \(4 of 4 pallets, 44 of 48 cartons\)\. Sample Sneakers's WMS shows the difference/.test(await p.locator('[data-testid=msg]').innerText()) && (await p.locator('[data-testid=recv-done]').count()) === 1, 'receiving: completed; the carton shortfall against the booking is reported to the WMS'); await shot('16-receiving-done');
+  await tab('Put-away'); const wp = (await p.locator('[data-testid=putaway-table] tbody tr .code').first().innerText()).trim(); await p.locator('[data-testid=scan-pallet]').fill(wp); await p.keyboard.press('Enter'); await wait(400); await p.locator('[data-testid=scan-position]').fill('LOC-P-71'); await p.keyboard.press('Enter'); await wait(1200);
+  ok(new RegExp(`${wp} is in P-71`).test(await p.locator('[data-testid=putaway-msg]').innerText()), 'put-away tab: scan the pallet, scan the position code');
   await tab('Floor'); await p.locator('[data-testid=jack-sheet]').click(); await wait(1200); const js = await p.locator('#wms-print').evaluate((f) => ({ pages: (f.srcdoc.match(/class="jack"/g) || []).length, codes: (f.srcdoc.match(/class="p"/g) || []).length, size: f.dataset.size }));
   ok(js.pages === 4 && js.codes === 78 && js.size === '8.5in 11in', `floor: pallet-jack scan sheet, every position with its barcode (${js.codes} on ${js.pages} letter pages)`);
   await tab('Pallets'); ok((await p.locator('[data-testid=pallet-table] tbody tr').count()) === 22, 'pallets: all 22 listed'); await shot('7-pallets');

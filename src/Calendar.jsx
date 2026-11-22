@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { rpc, iso, num } from './lib.js';
 import { Msg } from './parts.jsx';
 export const staffApi = {
-  shipments: (a, b) => rpc('nexus_shipments', { p_from: a, p_to: b }), brands: () => rpc('nexus_brands'),
+  shipments: (a, b) => rpc('nexus_shipments', { p_from: a, p_to: b }), brands: () => rpc('nexus_brands'), skus: (org) => rpc('nexus_brand_skus', { p_org: org }),
   save: (s) => (s.id ? rpc('nexus_shipment_update', { p_id: s.id, p_expected: s.expected_at, p_pallets: Number(s.pallets), p_cartons: Number(s.cartons || 0), p_origin: s.origin || null, p_notes: s.notes || null, p_cancel: !!s.cancel })
-    : rpc('nexus_shipment_create', { p_org: s.org_id, p_reference: s.reference, p_origin: s.origin || null, p_expected: s.expected_at, p_pallets: Number(s.pallets), p_cartons: Number(s.cartons || 0), p_notes: s.notes || null, p_lines: [] })),
+    : rpc('nexus_shipment_create', { p_org: s.org_id, p_reference: s.reference, p_origin: s.origin || null, p_expected: s.expected_at, p_pallets: Number(s.pallets), p_cartons: Number(s.cartons || 0), p_notes: s.notes || null, p_lines: (s.items || []).filter((l) => l.sku_id).map((l) => ({ sku_id: l.sku_id, qty: Number(l.qty) })) })),
 };
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const grid = (y, m) => { const first = new Date(y, m, 1); const start = new Date(y, m, 1 - first.getDay()); return Array.from({ length: 42 }, (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)); };
@@ -37,11 +37,14 @@ export function nextDays(rows, n = 7) { const a = iso(new Date()); const e = new
 
 // Full calendar page: month, the picked day's shipments, and a form to book or change one.
 export default function CalendarPage({ api, canEdit, brands: given, note }) {
-  const [tick, setTick] = useState(0); const cal = useMonth(api, tick); const [sel, setSel] = useState(iso(new Date())); const [form, setForm] = useState(null); const [msg, setMsg] = useState(null); const [brands, setBrands] = useState(given || []);
+  const [tick, setTick] = useState(0); const cal = useMonth(api, tick); const [sel, setSel] = useState(iso(new Date())); const [form, setForm] = useState(null); const [msg, setMsg] = useState(null); const [brands, setBrands] = useState(given || []); const [skus, setSkus] = useState([]);
   useEffect(() => { if (!given && api.brands) api.brands().then(setBrands).catch(() => {}); }, []);
+  const formOrg = form && !form.id ? form.org_id : null;
+  useEffect(() => { setSkus([]); if (formOrg && api.skus) api.skus(formOrg).then((d) => setSkus(d || [])).catch(() => {}); }, [formOrg]);
   const list = (cal.rows || []).filter((s) => s.expected_at === sel);
-  const open = (s) => { setMsg(null); setForm(s ? { ...s } : { org_id: brands[0]?.id || '', reference: '', origin: '', expected_at: sel, pallets: 1, cartons: 0, notes: '' }); };
-  const save = async (e, cancel) => { e?.preventDefault(); try { await api.save({ ...form, cancel }); setForm(null); setMsg({ kind: 'ok', text: cancel ? 'Shipment cancelled.' : 'Saved to the calendar.' }); setTick(tick + 1); } catch (x) { setMsg({ text: x.message }); } };
+  const open = (s) => { setMsg(null); setForm(s ? { ...s } : { org_id: brands[0]?.id || '', reference: '', origin: '', expected_at: sel, pallets: 1, cartons: 0, notes: '', items: [{ sku_id: '', qty: '' }] }); };
+  const setItem = (i, p) => setForm((f) => ({ ...f, items: f.items.map((l, j) => (j === i ? { ...l, ...p } : l)) }));
+  const save = async (e, cancel) => { e?.preventDefault(); if (!form.id && (form.items || []).some((l) => l.sku_id && !(Number(l.qty) > 0))) return setMsg({ text: 'Each item needs its expected units.' }); try { await api.save({ ...form, cancel }); setForm(null); setMsg({ kind: 'ok', text: cancel ? 'Shipment cancelled.' : 'Saved to the calendar.' }); setTick(tick + 1); } catch (x) { setMsg({ text: x.message }); } };
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const tot = (cal.rows || []).filter((s) => new Date(`${s.expected_at}T12:00`).getMonth() === cal.ym[1]);
   return (
@@ -62,10 +65,15 @@ export default function CalendarPage({ api, canEdit, brands: given, note }) {
           {canEdit && !form && <button className="btn primary" onClick={() => open(null)} disabled={!brands.length}>Book a shipment for this day</button>}
           {form && <form className="editor" onSubmit={save} data-testid="ship-form">
             {form.id ? <p className="sm"><b>{form.brand}</b> · {form.reference}</p> : <>
-              <label>Brand<select value={form.org_id} onChange={set('org_id')}>{brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+              <label>Brand<select value={form.org_id} onChange={(e) => setForm({ ...form, org_id: e.target.value, items: [{ sku_id: '', qty: '' }] })}>{brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
               <label>Reference<input aria-label="Reference" value={form.reference} onChange={set('reference')} required placeholder="PO, volume, or what it is" /></label></>}
             <div className="two"><label>Expected<input type="date" value={form.expected_at} onChange={set('expected_at')} required /></label><label>Pallets<input type="number" min="1" max="200" value={form.pallets} onChange={set('pallets')} required /></label></div>
             <div className="two"><label>Cartons<input type="number" min="0" value={form.cartons} onChange={set('cartons')} /></label><label>Coming from<input value={form.origin || ''} onChange={set('origin')} /></label></div>
+            {!form.id && api.skus && <div data-testid="ship-items"><h2 className="sub">What is on it</h2>
+              {skus.length === 0 ? <p className="sm">This brand has no items on file yet.</p> : form.items.map((l, i) => (
+                <div className="item" key={i}><select aria-label="Item" value={l.sku_id} onChange={(e) => setItem(i, { sku_id: e.target.value })}><option value="">Item…</option>{skus.filter((k) => k.id === l.sku_id || !form.items.some((x) => x.sku_id === k.id)).map((k) => <option key={k.id} value={k.id}>{k.sku} · {k.name}</option>)}</select>
+                  <input aria-label="Units expected" type="number" min="1" placeholder="Units" value={l.qty} onChange={(e) => setItem(i, { qty: e.target.value })} />{form.items.length > 1 && <button type="button" className="link sm" onClick={() => setForm({ ...form, items: form.items.filter((_, j) => j !== i) })}>Remove</button>}</div>))}
+              {skus.length > form.items.length && <button type="button" className="btn sm" onClick={() => setForm({ ...form, items: [...form.items, { sku_id: '', qty: '' }] })}>Add another item</button>}</div>}
             <label>Notes<input value={form.notes || ''} onChange={set('notes')} /></label>
             <div className="acts"><button className="btn primary">{form.id ? 'Save changes' : 'Book it'}</button><button type="button" className="btn" onClick={() => setForm(null)}>Back</button>
               {form.id && <button type="button" className="btn danger" onClick={() => save(null, true)}>Cancel shipment</button>}</div>

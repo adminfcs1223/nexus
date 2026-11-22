@@ -12,6 +12,9 @@ begin
 end $$;
 create or replace function public.nexus_brands() returns table(id uuid, name text) language plpgsql stable security definer set search_path to 'public' as $$
 begin perform 1 from _nexus_staff(); return query select o.id, o.name from orgs o where o.status <> 'churned' order by o.name; end $$;
+create or replace function public.nexus_brand_skus(p_org uuid) returns table(id uuid, sku text, name text) language plpgsql stable security definer set search_path to 'public' as $$
+begin perform 1 from _nexus_staff(); return query select s.id, s.sku, s.name from skus s where s.org_id = p_org order by s.sku limit 2000; end $$;
+grant execute on function public.nexus_brand_skus(uuid) to authenticated;
 create or replace function public.nexus_shipments(p_from date, p_to date) returns jsonb language plpgsql stable security definer set search_path to 'public' as $$
 begin
   perform 1 from _nexus_staff();
