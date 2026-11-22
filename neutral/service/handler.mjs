@@ -8,8 +8,9 @@ const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(bod
 const answer = (r) => json(r, r.ok ? 200 : STATUS[r.error] || 409);
 const fail = (error, message) => answer({ ok: false, error, message });
 
-export function makeHandler(query) {
-  const call = async (fn, args) => (await query(`select nexus.${fn}(${args.map((_, i) => `$${i + 1}`).join(', ')}) r`, args))[0].r;
+// Every value travels to the database as text and is cast there, so the answer does not depend on which driver hosts this.
+export function makeHandler(query, onError = () => {}) {
+  const call = async (fn, args, types = []) => (await query(`select nexus.${fn}(${args.map((_, i) => `$${i + 1}::text${types[i] ? `::${types[i]}` : ''}`).join(', ')}) r`, args.map((v) => (v == null ? null : String(v)))))[0].r;
   return async function handle(req) {
     const url = new URL(req.url); const path = url.pathname.replace(/\/+$/, ''); const m = req.method;
     if (path === '/v1/health' && m === 'GET') return json({ ok: true, service: 'nexus', api: VERSION });
@@ -28,19 +29,20 @@ export function makeHandler(query) {
     try {
       if (m === 'GET' && path === '/v1/map') return answer(await call('api_map', [key]));
       if (m === 'GET' && path === '/v1/occupancy') return answer(await call('api_occupancy', [key]));
-      if (m === 'GET' && path === '/v1/changes') return answer(await call('api_changes', [key, int('after') ?? 0, int('limit') ?? 200]));
-      if (m === 'GET' && path === '/v1/moves') return answer(await call('api_moves', [key, q('pallet'), int('before'), int('limit') ?? 200]));
+      if (m === 'GET' && path === '/v1/changes') return answer(await call('api_changes', [key, int('after') ?? 0, int('limit') ?? 200], [, 'bigint', 'integer']));
+      if (m === 'GET' && path === '/v1/moves') return answer(await call('api_moves', [key, q('pallet'), int('before'), int('limit') ?? 200], [, , 'bigint', 'integer']));
       const act = m === 'POST' && path.match(/^\/v1\/pallets\/(assign|move|release)$/)?.[1];
       if (act) return answer(await call('api_place', [key, act, s(body.pallet), s(body.to), s(body.from), req.headers.get('idempotency-key')]));
       if (m === 'GET' && path === '/v1/calendar') {
         const from = when('from'), to = when('to'); if (from === undefined || to === undefined) return fail('bad_request', 'from and to are dates with their offset');
-        return answer(await call('api_calendar', [key, from, to]));
+        return answer(await call('api_calendar', [key, from, to], [, 'timestamptz', 'timestamptz']));
       }
       const ev = path.match(/^\/v1\/calendar\/([^/]{1,64})$/)?.[1];
-      if (ev && m === 'PUT') return answer(await call('api_calendar_put', [key, decodeURIComponent(ev), JSON.stringify(body)]));
-      if (ev && m === 'DELETE') return answer(await call('api_calendar_put', [key, decodeURIComponent(ev), JSON.stringify({ status: 'cancelled' })]));
+      if (ev && m === 'PUT') return answer(await call('api_calendar_put', [key, decodeURIComponent(ev), JSON.stringify(body)], [, , 'jsonb']));
+      if (ev && m === 'DELETE') return answer(await call('api_calendar_put', [key, decodeURIComponent(ev), JSON.stringify({ status: 'cancelled' })], [, , 'jsonb']));
       return fail('not_found', 'unknown path or method');
-    } catch {
+    } catch (e) {
+      onError(String(e?.message || e).slice(0, 300));
       return fail('unavailable', 'Nexus could not answer. Nothing was changed; send the same request again with the same Idempotency-Key.');   // the cause is never sent to the caller
     }
   };
