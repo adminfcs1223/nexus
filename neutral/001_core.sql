@@ -14,7 +14,7 @@ create table nexus.companies (
 create table nexus.warehouses (
   code text primary key check (code ~ '^[A-Z0-9-]{2,24}$'), name text not null, test boolean not null default false,
   occupancy_state text not null default 'not_initialized' check (occupancy_state in ('not_initialized', 'verified', 'synthetic')),
-  moves_enabled boolean not null default false, map_version integer not null default 1, landmarks jsonb not null default '[]',
+  moves_enabled boolean not null default false, map_version integer not null default 1, landmarks jsonb not null default '[]', layout jsonb not null default '{}',
   baseline_verified_at timestamptz, baseline_verified_by text, created_at timestamptz not null default now(),
   check (test = (occupancy_state = 'synthetic')), check (test or not moves_enabled or occupancy_state = 'verified'));
 
@@ -31,7 +31,7 @@ create table nexus.locations (
   id uuid primary key default gen_random_uuid(), code text not null check (code ~ '^[A-Z0-9-]{2,16}$'),
   kind text not null check (kind in ('pallet', 'staging', 'dock')), warehouse text not null references nexus.warehouses(code), zone text, aisle text, bay text, level text, position text,
   capacity integer check (capacity > 0), status text not null default 'open' check (status in ('open', 'blocked', 'unavailable')), status_reason text,
-  restrictions jsonb not null default '{}', map_block text, map_col integer, map_row integer,
+  restrictions jsonb not null default '{}', map_block text, map_col integer, map_row integer, map_x integer, map_y integer,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(), updated_by text, unique (warehouse, code));
 
 -- a pallet Nexus has been told about: whose it is and what its own system calls it. Nothing about its contents.
@@ -205,16 +205,18 @@ begin
   return jsonb_build_object('ok', true, 'code', n.code, 'status', n.status, 'capacity', n.capacity);
 end $$;
 
--- the floor map every system draws from: one answer, so Nexus, ShipBay and Souled cannot draw different floors. `checksum`
--- changes whenever the layout does; a system that holds the same checksum holds the same map.
+-- the floor map every system draws from: one answer, so Nexus, ShipBay and Souled cannot draw different floors. Every
+-- drawn position carries its square on one shared grid (x left to right, y top to bottom), `layout` says where each block
+-- and the walkway sit on that grid, and `landmarks` say where the doors and the prep area are. `checksum` changes whenever
+-- any of that does; a system that holds the same checksum holds the same map.
 create function nexus.api_map(p_key text) returns jsonb language plpgsql set search_path to 'nexus' as $$
 declare a record; w warehouses; v jsonb;
 begin
   select * into a from _auth(p_key, 'read'); if a.error is not null then return a.error; end if;
   select * into w from warehouses where code = a.warehouse;
-  select coalesce(jsonb_agg(jsonb_build_object('code', l.code, 'kind', l.kind, 'zone', l.zone, 'block', l.map_block, 'col', l.map_col, 'row', l.map_row, 'capacity', l.capacity, 'status', l.status) order by l.map_block, l.map_col, l.map_row, l.code), '[]')
+  select coalesce(jsonb_agg(jsonb_build_object('code', l.code, 'kind', l.kind, 'zone', l.zone, 'block', l.map_block, 'col', l.map_col, 'row', l.map_row, 'x', l.map_x, 'y', l.map_y, 'capacity', l.capacity, 'status', l.status) order by l.map_block, l.map_col, l.map_row, l.code), '[]')
     into v from locations l where l.warehouse = w.code and l.map_block is not null;
-  return jsonb_build_object('ok', true, 'warehouse', w.code, 'test', w.test, 'map_version', w.map_version, 'checksum', _hash(v::text || w.landmarks::text), 'landmarks', w.landmarks,
+  return jsonb_build_object('ok', true, 'warehouse', w.code, 'test', w.test, 'map_version', w.map_version, 'checksum', _hash(v::text || w.landmarks::text || w.layout::text), 'landmarks', w.landmarks, 'layout', w.layout,
     'occupancy_state', w.occupancy_state, 'moves_enabled', w.moves_enabled, 'positions', v,
     'not_drawn', (select coalesce(jsonb_agg(jsonb_build_object('code', l.code, 'status', l.status, 'reason', l.status_reason) order by l.code), '[]') from locations l where l.warehouse = w.code and l.map_block is null));
 end $$;

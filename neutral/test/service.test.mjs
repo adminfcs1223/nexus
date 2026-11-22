@@ -37,8 +37,11 @@ test('all three draw one map: the same layout and checksum for Souled, ShipBay, 
   assert.deepEqual(a.positions, b.positions); assert.deepEqual(a.landmarks, b.landmarks); assert.equal(new Set([a.checksum, b.checksum, c.checksum, d.checksum]).size, 1);
   const count = (blk) => a.positions.filter((p) => p.block === blk).length;
   assert.deepEqual([count('outbound'), count('inbound'), count('staging'), a.positions.filter((p) => p.kind === 'pallet').length], [36, 30, 2, 66]);
-  assert.deepEqual(a.landmarks.map((l) => l.key), ['exit', 'dock', 'walkway', 'prep', 'entrance']); assert.equal(a.map_version, 2);
-  assert.deepEqual(a.not_drawn.map((x) => x.code), ['P-16', 'P-17', 'P-18', 'P-34', 'P-35', 'P-36']);
+  assert.deepEqual(a.landmarks.map((l) => l.key), ['exit', 'dock', 'walkway', 'entrance', 'prep']); assert.equal(a.map_version, 3); assert.deepEqual(a.not_drawn, []);
+  const at = (code) => { const p = a.positions.find((x) => x.code === code); return [p.x, p.y]; };
+  assert.deepEqual([at('P-01'), at('P-15'), at('P-16'), at('P-30'), at('P-31'), at('P-48'), at('P-49'), at('P-66'), at('STG-01'), at('STG-02')], [[4, 1], [4, 15], [5, 1], [5, 15], [1, 1], [1, 18], [2, 1], [2, 18], [4, 18], [5, 18]]);
+  assert.deepEqual(a.layout.blocks.map((b) => [b.key, b.x, b.y]), [['outbound', [1, 2], [1, 18]], ['walkway', [3, 3], [1, 18]], ['inbound', [4, 5], [1, 15]], ['staging', [4, 5], [18, 18]]]);
+  assert.deepEqual(a.positions.filter((p) => p.kind === 'pallet').map((p) => p.code).sort(), Array.from({ length: 66 }, (_, i) => `P-${String(i + 1).padStart(2, '0')}`));
 });
 test('the live floor over HTTP: empty, marked not initialized, and locked for both companies', async () => {
   for (const s of [souledLive, shipbayLive]) {
@@ -53,7 +56,7 @@ test('synthetic assign, move, conflict and release between the two systems', asy
   const a = await souled('POST', '/v1/pallets/assign', { pallet: 'SYN-S-1', to: 'P-37' }); assert.deepEqual([a.status, a.ok, a.location], [200, true, 'P-37']);
   const seen = (await shipbay('GET', '/v1/occupancy')).locations.find((l) => l.code === 'P-37'); assert.deepEqual([seen.used, seen.occupants, seen.your_pallets], [1, [{ company: 'SOULED', pallets: 1 }], []]);
   const clash = await shipbay('POST', '/v1/pallets/assign', { pallet: 'SYN-B-1', to: 'P-37' }); assert.deepEqual([clash.status, clash.error], [409, 'location_full']);
-  assert.deepEqual([(await shipbay('POST', '/v1/pallets/assign', { pallet: 'SYN-B-1', to: 'P-16' })).error, (await shipbay('POST', '/v1/pallets/assign', { pallet: 'SYN-B-1', to: 'P-99' })).status], ['location_unavailable', 404]);
+  assert.deepEqual([(await shipbay('POST', '/v1/pallets/assign', { pallet: 'SYN-B-1', to: 'P-67' })).error, (await shipbay('POST', '/v1/pallets/assign', { pallet: 'SYN-B-1', to: 'P-99' })).status], ['location_not_found', 404]);
   assert.equal((await shipbay('POST', '/v1/pallets/move', { pallet: 'SYN-S-1', to: 'P-38' })).status, 404, 'ShipBay cannot move a Souled pallet');
   const mv = await souled('POST', '/v1/pallets/move', { pallet: 'SYN-S-1', to: 'P-38', from: 'P-37' }, 'mv-1'); const again = await souled('POST', '/v1/pallets/move', { pallet: 'SYN-S-1', to: 'P-38', from: 'P-37' }, 'mv-1');
   assert.deepEqual([mv.ok, again.replayed, again.seq], [true, true, mv.seq]);
