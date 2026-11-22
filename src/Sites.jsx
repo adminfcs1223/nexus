@@ -55,6 +55,12 @@ export default function Sites({ data, reload }) {
               <div className="acts"><button className="btn primary" onClick={save}>Save</button><button className="btn" onClick={() => setEdit(null)}>Cancel</button></div></div>}
         </section>); })}
       {sites.length === 0 && <div className="empty">No site is set up yet.</div>}
+      <section className="api"><h2>How a site on its own system stays up to date</h2>
+        <p>With its admin key the site sends Nexus its bookings and product list as often as it likes; sending the same booking again changes it instead of making a second one. It reads back a numbered feed of what happened to its goods (pallet received, put away, moved, on hold, shipment received or received with differences), asking each time for everything after the last number it has, so nothing is missed while it was offline.</p>
+        <pre>{`nexus_api_products(key, { org_id, products: [{ sku, name, barcode }] })
+nexus_api_shipment_save(key, { org_id, reference, expected_at, pallets, cartons, items: [{ sku, name, qty }] })
+nexus_api_shipments(key, from, to)
+nexus_api_events(key, after)   ->  { events: [...], last }`}</pre></section>
       <section className="api"><h2>Who owns what</h2><p>A site owns its brands, products, bookings and orders. Nexus owns positions, pallets, labels and receipts. Neither edits the other's; each sees the other's as it changes. A site on the same database is always live. A site on its own system books shipments and reads results with its admin key, and shows here when it was last heard from.</p></section>
     </>);
 }
@@ -67,6 +73,7 @@ function Wizard({ wiz, setWiz, all, data, reload }) {
   const next = () => { setErr(null);
     if (wiz.step === 1 && !wiz.name.trim()) return setErr('Name the site.');
     if (wiz.step === 1 && data.sites.some((s) => s.name.toLowerCase() === wiz.name.trim().toLowerCase())) return setErr(`There is already a site called ${wiz.name.trim()}.`);
+    if (wiz.step === 3 && !wiz.org_ids.length) return setErr('Pick at least one brand.');
     set({ step: wiz.step === 3 && wiz.kind === 'shared' ? 5 : wiz.step + 1, ...(wiz.step === 3 && wiz.kind === 'shared' ? { create: true } : {}) }); };
   const create = async () => { setBusy(true); setErr(null); try { const d = await rpc('nexus_site_save', { p_id: null, p_name: wiz.name, p_kind: wiz.kind, p_org_ids: wiz.org_ids, p_perms: wiz.perms }); set({ step: 5, made: d, create: false }); reload(); } catch (x) { setErr(x.message); set({ step: 3, create: false }); } setBusy(false); };
   useEffect(() => { if (wiz.create && !wiz.made && !busy) create(); }, [wiz.create]);
@@ -80,7 +87,7 @@ function Wizard({ wiz, setWiz, all, data, reload }) {
         {wiz.step === 1 && <label>What is the site called?<input aria-label="Site name" autoFocus placeholder="e.g. Souled" value={wiz.name} onChange={(e) => set({ name: e.target.value })} /></label>}
         {wiz.step === 2 && <div className="choice">{[['shared', 'Its WMS runs on the same database as Nexus', 'Its bookings and products are live here the moment they change. Nothing to connect, no keys.'], ['api', 'It runs on its own system', 'It gets two keys. It books shipments and reads results with them, and Nexus shows when it was last heard from.']].map(([k, t, d]) => (
           <button type="button" key={k} className={wiz.kind === k ? 'on' : ''} onClick={() => set({ kind: k })} data-testid={`kind-${k}`}><b>{t}</b><span>{d}</span></button>))}</div>}
-        {wiz.step === 3 && <><h2 className="sub">Which brands does {wiz.name.trim()} handle? They show as "c/o" under it.</h2><BrandPicker all={all} sites={data.sites} siteId={null} ids={wiz.org_ids} set={(ids) => set({ org_ids: ids })} /><p className="sm">A brand under another site is greyed out: move it off that site first. A site can start with no brands.</p></>}
+        {wiz.step === 3 && <><h2 className="sub">Which brands does {wiz.name.trim()} handle? They show as "c/o" under it.</h2><BrandPicker all={all} sites={data.sites} siteId={null} ids={wiz.org_ids} set={(ids) => set({ org_ids: ids })} /><p className="sm">A brand under another site is greyed out: move it off that site first. A site needs at least one brand.</p></>}
         {wiz.step === 4 && <><h2 className="sub">What may each of {wiz.name.trim()}'s keys do?</h2><PermBoxes perms={wiz.perms} set={(p) => set({ perms: p })} /></>}
         {wiz.step === 5 && !wiz.made && <p className="sm">Setting up {wiz.name.trim()}…</p>}
         {wiz.step === 5 && wiz.made && <div data-testid="wizard-check">

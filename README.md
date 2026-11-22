@@ -26,9 +26,13 @@ page per pallet; FIFO marked under construction; Cycle counts; Connections (two 
   the real nexus_* functions and the real WMS receiving functions, the real screens in Chromium) and `node --test db.test.mjs`.
   `test/e2e/` is the older run and still describes the v1 screens.
 
-## Sites (branch `nexus-sites`, 2026-11-22) — built and tested locally, NOT live
+## Sites and the two-way link (live 2026-11-22)
 A site is a WMS that uses the warehouse (ShipBay, Souled). Receiving, Calendar, Dashboard and Pallets show the site first and
-the brand as "c/o". The Connections tab is now **Sites**: each site's brands, how it connects (same database = always live;
-its own system = two keys and a "last heard from"), and an **Add a site** wizard that ends on a connection check.
-`database/20261122_nexus_sites.sql` is not applied yet; it is additive and seeds ShipBay and Souled from `orgs.external_wms`.
-Printed labels are unchanged (brand-first).
+the brand as "c/o". The **Sites** tab holds each site's brands and how it connects, with an **Add a site** wizard that ends on
+a connection check. Printed labels stay brand-first.
+- `shared` site (ShipBay): its WMS is on this database, so it is always live.
+- `api` site (Souled, its own build): with its admin key it pushes its product list and bookings in
+  (`nexus_api_products`, `nexus_api_shipment_save`; the same brand + reference again changes the same booking) and reads a
+  numbered feed of floor events out (`nexus_api_events(key, after)`): pallet received / put away / moved / on hold / voided,
+  shipment received / discrepancy / cancelled. Sites shows when it was last heard from.
+- `database/20261122_nexus_sites.sql` and `database/20261122_nexus_two_way.sql` are applied. Rollbacks beside them.

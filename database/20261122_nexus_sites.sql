@@ -1,3 +1,4 @@
+-- APPLIED TO PRODUCTION 2026-11-22 (early morning), together, in one transaction with a read-only self-test. For reference; do not re-run.
 -- Nexus sites (Derek, 2026-11-22). A site is a WMS that uses this warehouse: ShipBay, Souled. Receiving and the calendar
 -- show the site first and the brand as "c/o". A brand belongs to one site. Sites reuse the nexus_clients rows (a site IS a
 -- connection: its brands, its two keys, its permissions), plus how it connects:
@@ -13,7 +14,7 @@ insert into public.nexus_clients (name, org_ids, key_hash, kind)
 select 'ShipBay', array_agg(id order by name), encode(sha256(convert_to(gen_random_uuid()::text || gen_random_uuid()::text, 'utf8')), 'hex'), 'shared'
 from public.orgs where not external_wms and status <> 'churned' and not exists (select 1 from public.nexus_clients) having count(*) > 0;
 insert into public.nexus_clients (name, org_ids, key_hash, kind)
-select 'Souled', array_agg(id order by name), encode(sha256(convert_to(gen_random_uuid()::text || gen_random_uuid()::text, 'utf8')), 'hex'), 'shared'
+select 'Souled', array_agg(id order by name), encode(sha256(convert_to(gen_random_uuid()::text || gen_random_uuid()::text, 'utf8')), 'hex'), 'api'
 from public.orgs where external_wms and status <> 'churned' and not exists (select 1 from public.nexus_clients where name <> 'ShipBay') having count(*) > 0;
 
 -- every site with its c/o brands and how fresh its data is. Admins also get permissions and key use.
@@ -42,7 +43,8 @@ begin
   if coalesce(btrim(p_name), '') = '' then raise exception 'Name the site.'; end if;
   if p_kind not in ('shared', 'api') then raise exception 'Say how the site connects.'; end if;
   if exists (select 1 from nexus_clients where lower(name) = lower(btrim(p_name)) and id is distinct from p_id) then raise exception 'There is already a site called %.', btrim(p_name); end if;
-  if (select count(*) from orgs where id = any(coalesce(p_org_ids, '{}'))) is distinct from coalesce(cardinality(p_org_ids), 0) then raise exception 'One of those brands is not on file.'; end if;
+  if coalesce(cardinality(p_org_ids), 0) = 0 then raise exception 'Pick at least one brand for the site.'; end if;
+  if (select count(*) from orgs where id = any(p_org_ids)) is distinct from cardinality(p_org_ids) then raise exception 'One of those brands is not on file.'; end if;
   select g.name || ' is already under ' || n.name into v_clash from nexus_clients n join orgs g on g.id = any(n.org_ids) where g.id = any(coalesce(p_org_ids, '{}')) and n.id is distinct from p_id limit 1;
   if v_clash is not null then raise exception '%. A brand belongs to one site.', v_clash; end if;
   if p_id is null then

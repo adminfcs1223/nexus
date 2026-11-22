@@ -108,3 +108,30 @@ test('receiving: a count that differs from the booking is marked discrepancy; a 
   await assert.rejects(floor(`select nexus_receiving_finish($1)`, [i.id]), /already discrepancy/);
   assert.equal(await one(floor, `select nexus_labels_printed('pallet', $1)`, [[ok[0].psku]]), 1); assert.equal((await db.query(`select prints from nexus_labels where kind = 'pallet' and code = $1`, [ok[0].psku])).rows[0].prints, 1);
 });
+test('two-way link for a site on its own system: bookings and products in, a numbered feed of floor events out', async () => {
+  const C = 'bb000000-0000-4000-8000-00000000000c';
+  await db.query(`update nexus_clients set org_ids = array_remove(org_ids, $1)`, [C]);
+  const made = await one(admin, `select nexus_site_save(null, 'Own System Co', 'api', $1, null)`, [[C]]); const k = made.admin_key;
+  await assert.rejects(admin(`select nexus_site_save(null, 'Clash', 'shared', $1, null)`, [[C]]), /already under Own System Co/);
+  assert.equal(await one(anon, `select nexus_api_products($1, $2)`, [k, JSON.stringify({ org_id: C, products: [{ sku: 'OWN-1', name: 'Own product one', barcode: '0123' }, { sku: 'CDL-SOY-8', name: 'Soy candle 8 oz, renamed' }] })]), 2);
+  const body = { org_id: C, reference: 'OWN-PO-77', expected_at: '2026-12-01', pallets: 2, cartons: 20, items: [{ sku: 'OWN-1', qty: 240 }, { sku: 'OWN-NEW', name: 'Made on the fly', qty: 60 }] };
+  const id = await one(anon, `select nexus_api_shipment_save($1, $2)`, [k, JSON.stringify(body)]);
+  assert.equal(await one(anon, `select nexus_api_shipment_save($1, $2)`, [k, JSON.stringify({ ...body, pallets: 3, items: [{ sku: 'OWN-1', qty: 300 }] })]), id, 'the same reference again changes the same booking');
+  const b = (await db.query(`select pallets, approved_at, (select json_agg(json_build_object('sku', s.sku, 'qty', n.qty_expected)) from inbound_lines n join skus s on s.id = n.sku_id where n.inbound_id = i.id) lines from inbound_shipments i where id = $1`, [id])).rows[0];
+  assert.equal(b.pallets, 3); assert.equal(b.approved_at, null); assert.deepEqual(b.lines, [{ sku: 'OWN-1', qty: 300 }]);
+  const site = (await one(admin, `select nexus_sites()`)).sites.find((s) => s.name === 'Own System Co'); assert.equal(site.kind, 'api'); assert.ok(site.heard_at, 'the site shows as heard from');
+  const start = (await one(anon, `select nexus_api_events($1, 0)`, [k])).last;
+  await admin(`select nexus_shipment_update($1, '2026-12-01', 3, 20, null, null, false)`, [id]);   // Nexus confirms the booking
+  const sku = (await db.query(`select id from skus where org_id = $1 and sku = 'OWN-1'`, [C])).rows[0].id;
+  const pal = await floor(`select * from wms_receive_booking($1, $2, $3, 3, null, 'own-1', 'final', null)`, [id, C, JSON.stringify([{ sku, cartons: 10, units_per_carton: 10 }])]);
+  for (const [n, p] of pal.entries()) await floor(`select nexus_putaway($1, $2)`, [p.psku, `P-${24 + n}`]);
+  await floor(`select nexus_receiving_finish($1)`, [id]);
+  const feed = await one(anon, `select nexus_api_events($1, $2)`, [k, start]); const kinds = feed.events.map((e) => e.kind);
+  assert.deepEqual(kinds, ['pallet_received', 'pallet_received', 'pallet_received', 'pallet_put_away', 'pallet_put_away', 'pallet_put_away', 'shipment_discrepancy']);
+  const last = feed.events.at(-1); assert.equal(last.shipment.reference, 'OWN-PO-77'); assert.deepEqual([last.shipment.pallets_received, last.shipment.cartons_received, last.shipment.cartons_booked], [3, 30, 20]);
+  assert.deepEqual(feed.events[3].pallet.contents, [{ sku: 'OWN-1', name: 'Own product one', cartons: 10, units: 100 }]); assert.equal(feed.events[3].pallet.position, "P-24");
+  assert.deepEqual((await one(anon, `select nexus_api_events($1, $2)`, [k, feed.last])).events, [], 'asking again from the last number returns nothing new');
+  await assert.rejects(anon(`select nexus_api_events($1, 0)`, [made.floor_key]), /needs the admin key/);
+  await assert.rejects(admin(`select nexus_site_save(null, 'Other Co', 'api', '{}', null)`), /at least one brand/);
+  assert.ok(feed.events.every((e) => e.org_id === C), 'a site only ever sees its own goods');
+});
