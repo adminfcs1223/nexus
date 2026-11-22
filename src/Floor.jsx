@@ -5,7 +5,7 @@ import { rpc, num, stamp, day } from './lib.js';
 import { useRpc } from './hooks.js';
 import FloorMap, { Legend, capacity } from './FloorMap.jsx';
 import { Msg, Pill, PalletEditor, what } from './parts.jsx';
-import { printPositionLabels, expandCodes } from './positions.js';
+import { printPositionLabels, printJackSheet, expandCodes } from './positions.js';
 
 export default function Floor({ me, openPallet }) {
   const admin = me.role === 'shipbay_admin'; const canMove = admin || me.role === 'shipbay_staff';
@@ -24,7 +24,7 @@ export default function Floor({ me, openPallet }) {
     if (!moving) { setSel(sel === code ? null : code); setEditing(null); setNewZone(null); return; }
     if (await run(() => rpc('nexus_move_pallet', { p_psku: moving.psku, p_location: code, p_reason: why || null, p_store: !!moving.store }), (r) => `${r.psku} ${moving.store ? 'put away at' : 'moved to'} ${r.to}${r.from ? ` (was ${r.from})` : ''}.`)) { setMoving(null); setWhy(''); setSel(code); }
   };
-  const print = async (rows) => { if (!printPositionLabels(rows)) return setMsg({ text: 'The print window did not open. Allow pop-ups for Nexus and press Print again.' }); try { await rpc('nexus_labels_printed', { p_kind: 'position', p_codes: rows.map((r) => r.code) }); again(); } catch { /* the label still printed */ } };
+  const print = async (rows) => { if (!(await printPositionLabels(rows))) return setMsg({ text: 'The print window did not open. Nothing was printed; press Print again.' }); try { await rpc('nexus_labels_printed', { p_kind: 'position', p_codes: rows.map((r) => r.code) }); again(); } catch { /* the label still printed */ } };
   const add = async (e) => { e.preventDefault(); let list; try { list = expandCodes(codes); } catch (x) { return setMsg({ text: x.message }); }
     if (await run(() => rpc('nexus_positions_add', { p_codes: list, p_zone: zone, p_kind: list.every((c) => c.startsWith('STG')) ? 'floor' : 'pallet' }), (n) => `${n} position${n === 1 ? '' : 's'} added.`)) setCodes(''); };
   const PalletCard = ({ x }) => (
@@ -59,7 +59,8 @@ export default function Floor({ me, openPallet }) {
             <div className="pal" key={x.psku}><div className="row"><button className="link code" onClick={() => openPallet(x.psku)}>{x.psku}</button><Pill p={x} /></div><div className="sm">{x.brand} · {x.item || '—'} · {stamp(x.received_at)}</div>
               {canMove && !x.held && <button className="btn sm primary" onClick={() => { setMoving({ psku: x.psku, store: true }); setMsg(null); }}>Put away on the map</button>}</div>))}</section>}
           <section data-testid="position-controls"><h2>Position labels and new positions</h2>
-            <div className="acts"><button className="btn" onClick={() => print(m.positions.filter((p) => p.kind === 'pallet'))}>Print all pallet position labels</button></div>
+            <div className="acts"><button className="btn primary" data-testid="jack-sheet" onClick={async () => { if (!(await printJackSheet(m.positions.filter((p) => p.kind !== 'dock')))) setMsg({ text: 'The print window did not open. Nothing was printed; press Print again.' }); }}>Print the pallet-jack scan sheet</button><button className="btn" onClick={() => print(m.positions.filter((p) => p.kind === 'pallet'))}>Print all 4 × 6 position labels</button></div>
+            <p className="sm">The scan sheet is every position's code and barcode on letter paper, for the pallet jacks: scan the pallet label, then its spot on the sheet.</p>
             {admin && <form className="acts" onSubmit={add}><input aria-label="New positions" placeholder="P-73..P-80 or STG-03" value={codes} onChange={(e) => setCodes(e.target.value)} /><input aria-label="Zone" placeholder="Zone" value={zone} onChange={(e) => setZone(e.target.value)} style={{ width: 110 }} /><button className="btn primary" disabled={!codes.trim()}>Add positions</button></form>}
             {admin && off?.length > 0 && <><h2 className="sub">Turned off</h2><div className="acts">{off.map((o) => <button key={o.code} className="btn sm" onClick={() => run(() => rpc('nexus_position_edit', { p_code: o.code, p_zone: o.zone, p_active: true }), `${o.code} is back on the map.`)}>Turn {o.code} back on</button>)}</div></>}
           </section>

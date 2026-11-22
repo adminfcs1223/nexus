@@ -1,6 +1,6 @@
 // Nexus screens. Every read and write goes through a nexus_* function.
 import { useEffect, useRef, useState } from 'react';
-import { supabase, rpc, num, day, stamp } from './lib.js';
+import { supabase, rpc, num, day, stamp, EMBED_VIEW } from './lib.js';
 import { useRpc } from './hooks.js';
 import FloorMap, { Legend } from './FloorMap.jsx';
 import Floor from './Floor.jsx';
@@ -16,7 +16,7 @@ const RESULT = { pending: 'Not counted yet', found: 'Found', misplaced: 'Wrong p
 export default function Nexus({ me, onSignOut, embed }) {
   const [tab, setTab] = useState('dashboard'); const [pallet, setPallet] = useState(null);
   const [ov, ovErr] = useRpc(embed ? null : 'nexus_overview', {}, []);
-  if (embed) return <main className="embed"><EmbedMap /></main>;
+  if (embed) return <main className="embed">{EMBED_VIEW === 'receiving' ? <Receiving me={me} /> : <EmbedMap />}</main>;   // inside a WMS: the floor map, or with ?embed=receiving the Receiving screen
   const brands = ov?.brands || []; const zones = (ov?.zones || []).map((z) => z.zone).filter((z) => z !== '—');
   const admin = me.role === 'shipbay_admin'; const tabs = TABS.filter(([k]) => k !== 'connections' || admin);
   const openPallet = (psku) => { setPallet(psku); setTab('pallets'); };
@@ -32,7 +32,7 @@ export default function Nexus({ me, onSignOut, embed }) {
         {tab === 'dashboard' && <Dashboard ov={ov} go={setTab} openPallet={openPallet} />}
         {tab === 'calendar' && <CalendarPage api={staffApi} canEdit={me.role !== 'wms_employee'} />}
         {tab === 'labels' && <Labels brands={brands} />}
-        {tab === 'receiving' && <Receiving />}
+        {tab === 'receiving' && <Receiving me={me} />}
         {tab === 'floor' && <Floor me={me} openPallet={openPallet} />}
         {tab === 'pallets' && <Pallets brands={brands} me={me} open={pallet} setOpen={setPallet} />}
         {tab === 'fifo' && <><div className="head"><h1>FIFO</h1></div><div className="construction" data-testid="construction"><b>Under construction</b><span>This page is being rebuilt.</span></div></>}
@@ -100,7 +100,7 @@ function Pallets({ brands, me, open, setOpen }) {
       <div className="head"><h1>Pallets</h1><div className="glance"><div><b>{num(list.length)}</b><small>Pallets shown</small></div><div><b>{num(sum('cartons'))}</b><small>Cartons</small></div><div><b>{num(sum('units_total'))}</b><small>Units</small></div><div><b>{list.length ? Math.max(...list.map((r) => r.age_days)) : 0}d</b><small>Oldest</small></div></div></div>
       <div className="filters">
         <select aria-label="Brand" value={org} onChange={(e) => setOrg(e.target.value)}><option value="">All brands</option>{brands.map((b) => <option key={b.org_id} value={b.org_id}>{b.brand}</option>)}</select>
-        <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">Any status</option><option value="stored">Stored</option><option value="counted">To put away</option><option value="open">Cartons to scan</option><option value="held">On hold</option></select>
+        <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">Any status</option><option value="stored">Stored</option><option value="counted">To put away</option><option value="open">Not put away</option><option value="held">On hold</option></select>
         <select aria-label="Zone filter" value={zone} onChange={(e) => setZone(e.target.value)}><option value="">Any zone</option>{zones.map((z) => <option key={z}>{z}</option>)}</select>
         <input aria-label="Search" placeholder="Pallet, position or item…" value={q} onChange={(e) => setQ(e.target.value)} /><span className="spacer" /><button className="btn" onClick={() => csv(list)} disabled={!list.length}>Download this list</button>
       </div>

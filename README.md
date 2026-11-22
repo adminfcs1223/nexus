@@ -9,15 +9,19 @@ Reads the same database as the ShipBay WMS, so there is one live pallet count.
 
 Embedded in a WMS with `?embed=1`: the WMS passes the signed-in user's access token; Nexus keeps no session there.
 
-## v2 (branch `nexus-v2-dashboard-floor-windows`, 2026-11-21) — built and tested locally, NOT live
-Dashboard (mini floor map, capacity ring, shipment calendar) with Calendar and Labeling under it, Receiving (pick whose
-shipment, receive against the WMS's booking, labels from Nexus, put away, complete: the booking is marked received), Floor (move a pallet, override
-what a WMS entered, every position's details, add / change / turn off positions, floor log), fuller Pallets with admin actions,
-FIFO marked under construction, Connections with two keys per site (floor window / admin window) and permissions.
-- `database/20261121_nexus_v2.sql` is a candidate: it has **not** been applied to the ShipBay database. The screens on this
-  branch need it. Rollback beside it.
-- A key window is `/?window=floor#k=<key>` or `/?window=admin#k=<key>`. To load inside a site, that site's address must be
-  added to `frame-ancestors` in `netlify.toml`.
-- `test/local/` runs everything here with no production access: `./run.sh` (throwaway Postgres on 127.0.0.1:54318, synthetic
-  data, the real functions, the real screens in Chromium) and `node --test db.test.mjs`. `test/e2e/` is the older run and still
-  describes the v1 screens.
+## v2 (live 2026-11-21)
+Dashboard (mini floor map, capacity ring, shipment calendar) with Calendar and Labeling under it; Receiving; Floor; Pallets with a
+page per pallet; FIFO marked under construction; Cycle counts; Connections (two keys per site, permissions).
+- **Receiving** runs here: who the shipment is for -> the booked shipment (its contents come from the brand's WMS) -> receive
+  (one product or a mixed pallet, FBA, NCC, off-list product, several alike, HOLD, carton labels before Receive) -> put away
+  (pallet label + position code) -> Complete, which marks the booking received / discrepancy for the brand's WMS.
+  It calls the WMS's own `wms_receive_booking` and `wms_hold_pskus`; nothing is re-implemented.
+- **Labels**: Nexus is the label source. `src/labels/` holds the designs carried over from the ShipBay WMS; every label is in
+  `nexus_labels`. Floor prints 4x6 position labels and the letter-size pallet-jack scan sheet.
+- **Inside a WMS**: `/?embed=1` is the live floor map, `/?embed=receiving` is the Receiving screen (the WMS passes the signed-in
+  user's token). **Inside any other site**: `/?window=floor#k=<key>` or `/?window=admin#k=<key>`; that site's address must be in
+  `frame-ancestors` in `netlify.toml`.
+- `database/20261121_nexus_v2.sql` is applied to the ShipBay database. Rollback beside it.
+- `test/local/` runs everything with no production access: `./run.sh` (throwaway Postgres on 127.0.0.1:54318, synthetic data,
+  the real nexus_* functions and the real WMS receiving functions, the real screens in Chromium) and `node --test db.test.mjs`.
+  `test/e2e/` is the older run and still describes the v1 screens.

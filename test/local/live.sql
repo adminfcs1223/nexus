@@ -1,4 +1,4 @@
--- Functions that are live in production but not in database/*.sql (definitions read from production 2026-11-21).
+-- Nexus functions that are live in production but not in database/*.sql (definitions read from production 2026-11-21).
 create or replace function public.nexus_positions_add(p_codes text[], p_zone text, p_kind text default 'pallet') returns integer language plpgsql security definer set search_path to 'public' as $$
 declare c record; n integer;
 begin

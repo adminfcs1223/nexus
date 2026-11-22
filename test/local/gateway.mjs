@@ -8,7 +8,7 @@ const meta = new Map();
 const lookup = async (fn) => { if (!meta.has(fn)) { const r = await pool.query(`select p.proretset, p.prorettype::regtype::text ret, coalesce(p.proargnames, '{}') names, (select coalesce(array_agg(t::regtype::text order by o), '{}') from unnest(p.proargtypes) with ordinality x(t, o)) types from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = $1`, [fn]); meta.set(fn, r.rows[0] || null); } return meta.get(fn); };
 http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
-  const m = new URL(req.url, 'http://x').pathname.match(/^\/rest\/v1\/rpc\/(nexus_[a-z_]+|wms_receive_booking)$/); if (!m) { res.writeHead(404, CORS); return res.end('{"message":"not part of the local stack"}'); }
+  const m = new URL(req.url, 'http://x').pathname.match(/^\/rest\/v1\/rpc\/(nexus_[a-z_]+|wms_receive_booking|wms_products|wms_hold_pskus)$/); if (!m) { res.writeHead(404, CORS); return res.end('{"message":"not part of the local stack"}'); }
   let body = ''; for await (const c of req) body += c; const args = body ? JSON.parse(body) : {};
   const who = (req.headers.authorization || '').replace('Bearer ', ''); const api = m[1].startsWith('nexus_api_');
   const f = await lookup(m[1]).catch(() => null); if (!f) { res.writeHead(400, CORS); return res.end(JSON.stringify({ message: `function ${m[1]} does not exist` })); }   // before taking a connection: a lookup while holding one can starve the pool

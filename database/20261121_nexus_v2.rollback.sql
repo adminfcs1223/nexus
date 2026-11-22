@@ -1,7 +1,7 @@
 -- Undo 20261121_nexus_v2.sql. The label register and the floor log are dropped with it.
 begin;
 drop trigger if exists nexus_label_pallet on public.wms_pallets; drop trigger if exists nexus_label_carton on public.wms_cartons;
-drop function if exists public.nexus_receiving_finish(uuid), public.nexus_receiving(uuid), public.nexus_receiving_brands(), public.nexus_api_labels(text, text), public.nexus_api_shipment_save(text, jsonb), public.nexus_api_shipments(text, date, date), public.nexus_api_scan(text, text, text), public.nexus_api_floor(text), public.nexus_api_window(text),
+drop function if exists public.nexus_label_pallets(text[]), public.nexus_receiving_finish(uuid), public.nexus_receiving(uuid), public.nexus_receiving_brands(), public.nexus_api_labels(text, text), public.nexus_api_shipment_save(text, jsonb), public.nexus_api_shipments(text, date, date), public.nexus_api_scan(text, text, text), public.nexus_api_floor(text), public.nexus_api_window(text),
   public.nexus_connection_new_key(uuid, text), public.nexus_connection_save(uuid, text, uuid[], jsonb), public.nexus_connections_list(), public.nexus_shipment_update(uuid, date, integer, integer, text, text, boolean), public.nexus_dashboard(),
   public.nexus_positions_off(), public.nexus_position_edit(text, text, boolean), public.nexus_position_detail(text), public.nexus_pallet_detail(text), public.nexus_floor_log(integer), public.nexus_pallet_void(text, text),
   public.nexus_pallet_edit(text, jsonb, text), public.nexus_move_pallet(text, text, text, boolean), public.nexus_labels_printed(text, text[]), public.nexus_labels_list(uuid, text, text, integer), public._nexus_label_trg(), public._nexus_history(uuid, text, integer);

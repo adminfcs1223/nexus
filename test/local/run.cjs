@@ -31,7 +31,7 @@ const norm = (t) => t.replace(/\s+/g, ' ').trim();
 
   await tab('Labeling'); ok((await p.locator('[data-testid=label-table] tbody tr').count()) > 100, 'labeling: every pallet and carton label is on file');
   await p.getByLabel('Kind').selectOption('pallet'); await wait(900); ok((await p.locator('[data-testid=label-table] tbody tr').count()) === 18, 'labeling: 18 pallet labels');
-  await p.locator('[data-testid=label-table] tbody tr').first().click(); await wait(300); ok((await p.locator('[data-testid=label-detail] .face svg').count()) === 1, 'labeling: a stored label can be opened with its barcode'); await shot('3-labeling');
+  await p.locator('[data-testid=label-table] tbody tr').first().click(); await wait(1200); ok((await p.locator('[data-testid=label-detail] .labelview .plabel svg').count()) === 1 && /Nexus/.test(await p.locator('[data-testid=label-detail] .plabel footer').innerText()), 'labeling: a stored label opens as the real 4 x 6 pallet label, drawn by Nexus'); await shot('3-labeling');
 
   await tab('Floor'); ok((await p.locator('h1').innerText()).toUpperCase() === 'FLOOR', 'Locations is now Floor');
   await p.locator('[data-testid="cell-P-03"]').click(); await wait(900); const det = norm(await p.locator('[data-testid=cell-detail]').innerText());
@@ -52,13 +52,33 @@ const norm = (t) => t.replace(/\s+/g, ' ').trim();
   await p.locator('[data-testid=recv-brands] button', { hasText: 'Sample Sneakers' }).click(); await wait(900); await shot('14-receiving-shipments');
   await p.locator('[data-testid=recv-ship]', { hasText: 'Runner restock' }).getByRole('button', { name: 'Receive' }).click(); await wait(600);
   ok(/288 units/i.test(await p.locator('main').innerText()), 'receiving: what is in the shipment comes from the booking');
-  await p.getByLabel('Cartons').fill('12'); await p.locator('[data-testid=recv-form] input[type=number]').nth(1).fill('6'); await p.locator('[data-testid=recv-form] input[type=number]').nth(2).fill('4'); await p.getByLabel('After this').selectOption('final'); await p.getByRole('button', { name: 'Receive', exact: true }).click(); await wait(1500);
-  ok((await p.locator('[data-testid=recv-pallet]').count()) === 4 && /4 pallets received/.test(await p.locator('[data-testid=msg]').innerText()), 'receiving: 4 pallets received against the booking');
+  const frame = async () => p.locator('#wms-print').evaluate((f) => ({ pages: (f.srcdoc.match(/class="(plabel|cpage|jack)"/g) || []).length, size: f.dataset.size, html: f.srcdoc })).catch(() => null);
+  ok(/Enter the cartons/i.test(await p.locator('[data-testid=recv-form] .btn.big').innerText()), 'receiving: the button says what is missing');
+  await p.getByLabel('Cartons').fill('12'); await p.getByLabel('Units per carton').fill('6'); await p.getByLabel('Pallets like this').fill('3'); await wait(300);
+  ok((await p.locator('[data-testid=recv-labels] .labelview').count()) === 2 && /PSKU-______/.test(await p.locator('[data-testid=recv-labels]').innerText()), 'receiving: live preview of the pallet and carton label');
+  await p.getByRole('button', { name: /Print carton labels now/ }).click(); await wait(1500); let fr = await frame();
+  const heldTxt = await p.locator('[data-testid=recv-labels] .strip.ok').innerText(); const held = heldTxt.match(/PSKU-\d{6}/g) || [];
+  ok(held.length === 3 && fr?.pages === 36 && fr.html.includes(`C${held[0].slice(5)}01`), `receiving: carton labels printed before Receive on held pallet numbers (${held.join(', ')}; ${fr?.pages} labels)`);
+  await p.locator('[data-testid=recv-form] .btn.big').click(); await wait(1800);
+  ok((await p.locator('[data-testid=recv-pallet]').count()) === 3 && new RegExp(`3 pallets received: ${held.join(', ')}`).test(await p.locator('[data-testid=msg]').innerText()), 'receiving: 3 pallets received under the numbers already on their labels');
+  ok(/printed before receiving/.test(await p.locator('[data-testid=recv-print]').innerText()), 'receiving: the early labels were checked against what the database made');
+  await p.locator('[data-testid=recv-print]').getByRole('button', { name: 'Print', exact: true }).click(); await wait(1200); fr = await frame();
+  ok(fr?.pages === 3 && fr.size === '4in 6in' && fr.html.includes('<span>Nexus</span>'), 'receiving: 4 x 6 pallet labels are drawn and printed by Nexus'); await shot('15a-receiving-labels');
+  await p.getByRole('button', { name: /next pallet/ }).click(); await wait(300);
+  // last pallet: mixed, with an FBA line, a product from outside the booking list is not needed; add an NCC line that is not on the list
+  await p.getByLabel('Cartons').fill('8'); await p.getByLabel('Units per carton').fill('6'); await p.locator('[data-testid=recv-line] .chk', { hasText: 'FBA' }).click();
+  await p.getByRole('button', { name: '+ Another product on this pallet' }).click(); await wait(200); await p.locator('[data-testid=recv-line]').nth(1).getByLabel('Product').selectOption('__off'); await p.getByLabel('Product name').fill('Loose shoe boxes'); await p.locator('[data-testid=recv-line]').nth(1).locator('.chk', { hasText: 'NCC' }).click();
+  await p.getByLabel('After this').selectOption('final'); await wait(300); await shot('15b-receiving-mixed');
+  ok(/Receive 1 mixed pallet · 8 cartons/i.test(await p.locator('[data-testid=recv-form] .btn.big').innerText()), 'receiving: a mixed pallet with an FBA line and an NCC line that is not on the list');
+  await p.locator('[data-testid=recv-form] .btn.big').click(); await wait(1800);
+  ok((await p.locator('[data-testid=recv-pallet]').count()) === 4 && /Mixed pallet · 2 products/.test(await p.locator('[data-testid=recv-pallet]').last().innerText()), 'receiving: the mixed pallet is on file'); await p.getByRole('button', { name: /next pallet/ }).click();
   ok(await p.getByRole('button', { name: 'Complete receiving' }).isDisabled(), 'receiving: cannot be completed before put-away');
   const got = await p.locator('[data-testid=recv-pallet] .code').allInnerTexts(); const spots = ['P-62', 'P-63', 'P-64', 'P-65'];
   for (let i = 0; i < 4; i++) { await p.locator('[data-testid=recv-put]').getByLabel('Pallet').fill(got[i]); await p.locator('[data-testid=recv-put]').getByLabel('Position').fill(spots[i]); await p.getByRole('button', { name: 'Put away', exact: true }).click(); await wait(900); }
   await wait(600); await shot('15-receiving'); await p.getByRole('button', { name: 'Complete receiving' }).click(); await wait(1200);
-  ok(/fully received: 4 pallets\. Sample Sneakers's WMS now shows it as received/.test(await p.locator('[data-testid=msg]').innerText()) && (await p.locator('[data-testid=recv-done]').count()) === 1, 'receiving: completed, and the booking is marked received for the WMS'); await shot('16-receiving-done');
+  ok(/received with differences \(4 of 4 pallets, 44 of 48 cartons\)\. Sample Sneakers's WMS shows the difference/.test(await p.locator('[data-testid=msg]').innerText()) && (await p.locator('[data-testid=recv-done]').count()) === 1, 'receiving: completed; the carton shortfall against the booking is reported to the WMS'); await shot('16-receiving-done');
+  await tab('Floor'); await p.locator('[data-testid=jack-sheet]').click(); await wait(1200); const js = await p.locator('#wms-print').evaluate((f) => ({ pages: (f.srcdoc.match(/class="jack"/g) || []).length, codes: (f.srcdoc.match(/class="p"/g) || []).length, size: f.dataset.size }));
+  ok(js.pages === 4 && js.codes === 78 && js.size === '8.5in 11in', `floor: pallet-jack scan sheet, every position with its barcode (${js.codes} on ${js.pages} letter pages)`);
   await tab('Pallets'); ok((await p.locator('[data-testid=pallet-table] tbody tr').count()) === 22, 'pallets: all 22 listed'); await shot('7-pallets');
   await p.locator('[data-testid=pallet-table] tbody tr', { hasText: psku }).click(); await wait(1000);
   const facts = norm(await p.locator('[data-testid=pallet-facts]').innerText()); ok(/Cartons scanned\s*12 of 12/i.test(facts) && /Received/i.test(facts) && (await p.locator('[data-testid=pallet-admin] button').count()) === 3, 'pallet page: full details and the three admin actions'); await shot('8-pallet');

@@ -16,7 +16,7 @@ do $$ declare r record; v uuid; i int; n int := 0; begin
       case when r.org = 'a' then 'VOL-135' end, r.org = 'b' and n % 2 = 0, r.pos = -1, case when r.pos = -1 then 'Carton count short by 2' end
     from skus s where s.id = ('cc000000-0000-4000-8000-00000000000' || r.sku)::uuid returning id into v;
     for i in 1..r.cartons loop insert into wms_cartons (pallet_id, org_id, seq, code, sku_id, item_no, item_name, units_per_carton, scanned_at)
-      select v, p.org_id, i, replace(p.psku, 'PSKU-', 'C') || '-' || lpad(i::text, 3, '0'), p.sku_id, p.item_no, p.item_name, p.units_per_carton, case when r.pos > 0 then p.received_at + interval '20 minutes' end from wms_pallets p where p.id = v; end loop;
+      select v, p.org_id, i, replace(p.psku, 'PSKU-', 'C') || lpad(i::text, greatest(2, length(r.cartons::text)), '0'), p.sku_id, p.item_no, p.item_name, p.units_per_carton, case when r.pos > 0 then p.received_at + interval '20 minutes' end from wms_pallets p where p.id = v; end loop;
     if r.pos > 0 then
       update wms_pallets set status = 'stored', location_id = (select id from locations where code = 'P-' || lpad(r.pos::text, 2, '0')), counted_at = received_at + interval '25 minutes', counted_by_name = 'Test Floor',
         stored_at = received_at + interval '40 minutes', stored_by_name = 'Test Floor', label_prints = 1, last_printed_at = received_at where id = v;
@@ -25,6 +25,7 @@ do $$ declare r record; v uuid; i int; n int := 0; begin
     insert into wms_activity (at, org_id, kind, ref, actor_name) select received_at, org_id, 'pallet_received', psku, 'Test Floor' from wms_pallets where id = v;
   end loop;
 end $$;
+select set_config('request.jwt.claims', '', false);   -- bookings below are made with no login, so the approval guard leaves them as written
 insert into inbound_shipments (org_id, reference, origin, expected_at, pallets, cartons, approved_at, notes) values
   ('bb000000-0000-4000-8000-00000000000a', 'VOL-136 records', 'Pressing plant', current_date + 2, 6, 175, now(), null), ('bb000000-0000-4000-8000-00000000000a', 'VOL-136 mailers', 'Box maker', current_date + 2, 16, 0, now(), null),
   ('bb000000-0000-4000-8000-00000000000b', 'Runner restock', 'Supplier', current_date + 6, 4, 48, now(), null), ('bb000000-0000-4000-8000-00000000000c', 'Holiday candles', null, current_date + 11, 3, 72, null, 'Lift gate needed'),

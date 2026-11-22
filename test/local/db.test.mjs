@@ -77,15 +77,34 @@ test('calendar: change and cancel; dashboard reads', async () => {
   await admin(`select nexus_shipment_update($1, null, null, null, null, null, true)`, [i]);
   const d = await one(floor, `select nexus_dashboard()`); assert.ok(d.labels_total > 100 && Array.isArray(d.waiting) && d.log.length > 0);
 });
-test('receiving in Nexus: receive against the booking, put away, complete; the booking is marked for the WMS', async () => {
-  const i = (await db.query(`select id, org_id from inbound_shipments where reference = 'VOL-136 records'`)).rows[0]; const sku = (await db.query(`select id from skus where sku = 'REC-LP-135'`)).rows[0].id;
+test('receiving in Nexus on the real WMS receiving functions: mixed pallet, NCC, hold, put away, complete', async () => {
+  const i = (await db.query(`select id, org_id from inbound_shipments where reference = 'VOL-136 records'`)).rows[0]; const sku = (n) => db.query(`select id from skus where sku = $1`, [n]).then((r) => r.rows[0].id);
+  const lp = await sku('REC-LP-135'), mailer = await sku('REC-MAILER');
   const br = await one(floor, `select nexus_receiving_brands()`); assert.ok(br.find((b) => b.name === 'Sample Records').open >= 2);
-  const made = await floor(`select * from wms_receive_booking($1, $2, $3, 6, null, 'k-test-1', 'final', null)`, [i.id, i.org_id, JSON.stringify([{ sku, cartons: 20, units_per_carton: 20 }])]); assert.equal(made.length, 6);
+  const recv = (lines, n, key, mode, why = null) => floor(`select * from wms_receive_booking($1, $2, $3, $4, null, $5, $6, $7)`, [i.id, i.org_id, JSON.stringify(lines), n, key, mode, why]);
+  const held = await floor(`select * from wms_hold_pskus('k-1', 4)`); assert.equal(held.length, 4, 'pallet numbers can be taken first, to print carton labels before Receive');
+  const a = await recv([{ sku: lp, cartons: 30, units_per_carton: 20, fba: false, cle: false }], 4, 'k-1', 'partial'); assert.deepEqual(a.map((p) => p.psku), held.map((h) => h.wms_hold_pskus));
+  const mixed = await recv([{ sku: lp, cartons: 25, units_per_carton: 20, fba: true, cle: false }, { sku: mailer, cartons: 30, units_per_carton: 50, fba: false, cle: false }, { sku: null, name: 'Loose inserts', cle: true }], 1, 'k-2', 'partial');
+  assert.equal(mixed[0].mixed, true); assert.equal(mixed[0].cartons, 55);
+  const lab = await one(floor, `select nexus_label_pallets($1)`, [[mixed[0].psku]]); assert.equal(lab[0]._cartons.length, 56, '55 cartons + the NCC marker row'); assert.equal(lab[0].brand, 'Sample Records');
+  assert.equal((await db.query(`select count(*) n from nexus_labels where pallet_id = $1 and kind = 'carton'`, [mixed[0].id])).rows[0].n, '55', 'the register holds a label per counted carton, none for NCC');
+  const bad = await recv([{ sku: lp, cartons: 5, units_per_carton: 20 }], 1, 'k-3', 'final'); assert.equal(bad.length, 1);
   await assert.rejects(floor(`select nexus_receiving_finish($1)`, [i.id]), /has to be put away first/);
-  for (const [n, p] of made.entries()) await floor(`select nexus_putaway($1, $2)`, [p.psku, `P-${45 + n}`]);
-  const r = await one(floor, `select nexus_receiving_finish($1)`, [i.id]); assert.equal(r.status, 'discrepancy', '6 of 6 pallets but 120 of 175 cartons booked');
-  const b = (await db.query('select status, received_at from inbound_shipments where id = $1', [i.id])).rows[0]; assert.equal(b.status, 'discrepancy'); assert.ok(b.received_at);
+  const all = [...a, ...mixed, ...bad]; for (const [n, p] of all.entries()) await floor(`select nexus_putaway($1, $2)`, [p.psku, `P-${45 + n}`]);
+  const r = await one(floor, `select nexus_receiving_finish($1)`, [i.id]); assert.deepEqual([r.status, r.pallets, r.cartons], ['discrepancy', 6, 180], '6 of 6 pallets, but 180 cartons against 175 booked');
+});
+test('receiving: a count that differs from the booking is marked discrepancy; a held pallet blocks completion; the WMS sees the status change', async () => {
+  const i = (await db.query(`select id, org_id from inbound_shipments where reference = 'Runner restock'`)).rows[0]; const shoe = (await db.query(`select id from skus where sku = 'SNK-RUN-10'`)).rows[0].id;
+  const recv = (n, key, mode, why = null) => floor(`select * from wms_receive_booking($1, $2, $3, $4, null, $5, $6, $7)`, [i.id, i.org_id, JSON.stringify([{ sku: shoe, cartons: 12, units_per_carton: 6 }]), n, key, mode, why]);
+  const ok = await recv(2, 'r-1', 'partial'); const hold = await recv(1, 'r-2', 'hold', 'Crushed corner'); await recv(1, 'r-3', 'final');
+  await assert.rejects(floor(`select nexus_putaway($1, 'P-66')`, [hold[0].psku]), /on HOLD/);
+  for (const [n, p] of ok.entries()) await floor(`select nexus_putaway($1, $2)`, [p.psku, `P-${62 + n}`]);
+  await assert.rejects(floor(`select nexus_receiving_finish($1)`, [i.id]), /on HOLD/);
+  await db.query(`update wms_pallets set status = 'void', hold_disposition = 'voided' where id = $1`, [hold[0].id]);   // an admin voids the held pallet (wms_hold_disposition in production)
+  const last = (await db.query(`select psku from wms_pallets where batch_key = 'r-3'`)).rows[0].psku; await floor(`select nexus_putaway($1, 'P-64')`, [last]);
+  const r = await one(floor, `select nexus_receiving_finish($1)`, [i.id]); assert.equal(r.status, 'discrepancy', '3 of 4 pallets booked');
+  const b = (await db.query('select status, received_at, approved_at from inbound_shipments where id = $1', [i.id])).rows[0]; assert.equal(b.status, 'discrepancy'); assert.ok(b.received_at && b.approved_at);
+  assert.equal((await db.query(`select to_value from events where entity = 'inbound' and entity_id = $1 and action = 'status_change'`, [i.id])).rows[0].to_value, 'discrepancy', 'the status change is in the event log the WMS and portal read');
   await assert.rejects(floor(`select nexus_receiving_finish($1)`, [i.id]), /already discrepancy/);
-  const list = await one(floor, `select nexus_receiving($1)`, [i.org_id]); assert.equal(list.find((x) => x.id === i.id).pallet_list.length, 6);
-  assert.equal(await one(floor, `select nexus_labels_printed('pallet', $1)`, [[made[0].psku]]), 1); assert.equal((await db.query(`select prints from nexus_labels where kind = 'pallet' and code = $1`, [made[0].psku])).rows[0].prints, 1);
+  assert.equal(await one(floor, `select nexus_labels_printed('pallet', $1)`, [[ok[0].psku]]), 1); assert.equal((await db.query(`select prints from nexus_labels where kind = 'pallet' and code = $1`, [ok[0].psku])).rows[0].prints, 1);
 });

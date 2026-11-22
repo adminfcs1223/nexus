@@ -1,8 +1,10 @@
--- CANDIDATE, NOT APPLIED TO PRODUCTION. Nexus v2 (Derek, 2026-11-21): Floor controls (move a pallet, override what a WMS entered,
--- everything about a position), a label register (every label a WMS makes is recorded in Nexus), connections with two keys
--- (floor window / admin window) and per-connection permissions, and calendar edits.
+-- Nexus v2 (Derek, 2026-11-21). APPLIED TO PRODUCTION 2026-11-21 (evening), in one transaction with a read-only self-test.
+-- Floor controls (move a pallet, override what a WMS entered, everything about a position), the label register (Nexus is the
+-- label source: every pallet and carton label is recorded the moment it is made), Receiving in Nexus (list, label data, complete),
+-- connections with two keys (floor window / admin window) and per-connection permissions, and calendar edits.
 -- Additive: new tables, new columns on nexus_clients, new functions, two triggers that can never block receiving.
 -- One existing function is replaced: _nexus_api_client (so the read API accepts either key of a connection).
+-- For reference; do not re-run. Undo: 20261121_nexus_v2.rollback.sql.
 begin;
 
 -- ───────── tables ─────────
@@ -433,6 +435,14 @@ begin
         from wms_pallets p where p.inbound_id = i.id and p.status <> 'void')) order by (i.status = 'received'), i.expected_at nulls last, i.reference), '[]')
     from inbound_shipments i where i.org_id = p_org and (i.status in ('expected', 'in_transit') or (i.status in ('received', 'discrepancy') and i.received_at > now() - interval '3 days')));
 end $$;
+-- pallets exactly as the database holds them, each with its carton rows: what a label is drawn from
+create function public.nexus_label_pallets(p_pskus text[]) returns jsonb language plpgsql stable security definer set search_path to 'public' as $$
+begin
+  perform 1 from _nexus_staff();
+  if coalesce(cardinality(p_pskus), 0) = 0 or cardinality(p_pskus) > 60 then raise exception 'Between 1 and 60 pallets at a time.'; end if;
+  return (select coalesce(jsonb_agg(to_jsonb(p) || jsonb_build_object('brand', g.name, '_cartons', (select coalesce(jsonb_agg(to_jsonb(c) order by c.seq), '[]') from wms_cartons c where c.pallet_id = p.id)) order by p.psku), '[]')
+    from wms_pallets p join orgs g on g.id = p.org_id where p.psku = any(p_pskus) and p.status <> 'void');
+end $$;
 -- the whole receiving process is done: the last receipt is recorded and every pallet stands in a position. Marks the booking
 -- received (or discrepancy when the counts differ from what was booked), which is what the brand's WMS and portal read.
 create function public.nexus_receiving_finish(p_inbound uuid) returns jsonb language plpgsql security definer set search_path to 'public' as $$
@@ -455,7 +465,7 @@ begin
 end $$;
 
 do $$ declare f text; begin
-  for f in select p.oid::regprocedure::text from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('nexus_receiving_brands', 'nexus_receiving', 'nexus_receiving_finish', 'nexus_labels_list', 'nexus_labels_printed', 'nexus_move_pallet', 'nexus_pallet_edit', 'nexus_pallet_void',
+  for f in select p.oid::regprocedure::text from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('nexus_label_pallets', 'nexus_receiving_brands', 'nexus_receiving', 'nexus_receiving_finish', 'nexus_labels_list', 'nexus_labels_printed', 'nexus_move_pallet', 'nexus_pallet_edit', 'nexus_pallet_void',
       'nexus_floor_log', 'nexus_pallet_detail', 'nexus_position_detail', 'nexus_position_edit', 'nexus_positions_off', 'nexus_dashboard', 'nexus_shipment_update', 'nexus_connections_list', 'nexus_connection_save', 'nexus_connection_new_key',
       'nexus_api_window', 'nexus_api_floor', 'nexus_api_scan', 'nexus_api_shipments', 'nexus_api_shipment_save', 'nexus_api_labels') loop
     execute format('revoke all on function %s from public, anon, authenticated, service_role', f);

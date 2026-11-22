@@ -17,7 +17,7 @@ export function Ring({ m }) {
     </div>);
 }
 export const Msg = ({ m }) => (m ? <div className={`strip ${m.kind || 'bad'}`} data-testid="msg">{m.text}</div> : null);
-export const Pill = ({ p }) => <span className={`pill ${p.held ? 'held' : p.status}`}>{p.held ? 'On hold' : { open: 'Cartons to scan', counted: 'To put away', stored: 'Stored', void: 'Voided' }[p.status] || p.status}</span>;
+export const Pill = ({ p }) => <span className={`pill ${p.held ? 'held' : p.status}`}>{p.held ? 'On hold' : { open: 'Not put away', counted: 'To put away', stored: 'Stored', void: 'Voided' }[p.status] || p.status}</span>;
 const ACT = { move: 'Moved', putaway: 'Put away', edit: 'Details changed', void: 'Voided', position_edit: 'Position changed', position_add: 'Position added', received: 'Shipment fully received', pallet_received: 'Received', pallet_counted: 'Cartons counted', pallet_putaway: 'Put away', pallet_voided: 'Voided', pallet_hold: 'Put on hold', pallet_label_print: 'Label printed' };
 const FIELD = { cartons: 'Cartons', units_total: 'Units', units_per_carton: 'Units per carton', item_name: 'Item', notes: 'Notes', reference: 'Reference', carrier: 'Carrier', fba: 'FBA', zone: 'Zone', active: 'In use', pallets: 'Pallets booked/received' };
 export const what = (h) => {

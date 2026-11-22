@@ -1,16 +1,22 @@
-// Position labels, printed from Nexus (the warehouse's shared controls live here, not in any one WMS).
-// 4x6 label: the code large, its zone, and the LOC-<code> barcode the put-away scan reads.
+// Position labels and the pallet-jack scan sheet, printed from Nexus (the warehouse's shared controls live here, not in any one WMS).
 import JsBarcode from 'jsbarcode';
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const bars = (v) => { const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); JsBarcode(svg, v, { format: 'CODE128', displayValue: false, margin: 0, height: 90, width: 3 }); svg.setAttribute('preserveAspectRatio', 'none'); svg.style.width = '100%'; svg.style.height = '1.6in'; return svg.outerHTML; };
-export const labelsHtml = (rows) => `<!doctype html><html><head><meta charset="utf-8"><title>Position labels</title><style>
-@page { size: 4in 6in; margin: 0; } body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
-section { width: 4in; height: 6in; padding: .3in; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; }
-h1 { font-size: 1.25in; margin: 0; line-height: 1; } p { margin: .1in 0 0; font-size: .26in; text-transform: uppercase; } footer { display: flex; justify-content: space-between; font-size: .16in; }
-</style></head><body>${rows.map((l) => `<section><div><h1>${esc(l.code)}</h1><p>${esc(l.zone || '')}</p></div>${bars(`LOC-${l.code}`)}<footer><span>NEXUS</span><span>LOC-${esc(l.code)}</span></footer></section>`).join('')}</body></html>`;
-export function printPositionLabels(rows) {
-  const w = window.open('', '_blank'); if (!w) return false;
-  w.document.write(labelsHtml(rows)); w.document.close(); w.focus(); setTimeout(() => w.print(), 300); return true;
+import { printLocationLabels } from './labels/label.js';
+import { printPages } from './labels/print.js';
+import { esc } from './lib.js';
+/** 4x6 position labels, one per page: the code large, its zone, and the LOC-<code> barcode the put-away scan reads. */
+export const printPositionLabels = (rows) => printLocationLabels(rows, '4x6');
+const bars = (v) => { const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); JsBarcode(svg, v, { format: 'CODE128', displayValue: false, margin: 0, height: 60, width: 2 }); svg.setAttribute('preserveAspectRatio', 'none'); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.removeAttribute('style'); svg.setAttribute('viewBox', `0 0 ${svg.querySelector('rect')?.getAttribute('width') || 200} 60`); return svg.outerHTML; };
+const SHEET_CSS = `.jack { width: 8.5in; height: 11in; padding: .4in .45in; box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; color: #000; background: #fff; display: flex; flex-direction: column; }
+  .jack header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px solid #000; padding-bottom: .08in; margin-bottom: .12in; } .jack header b { font-size: .26in; } .jack header span { font-size: .13in; font-weight: 700; }
+  .jack .grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: .1in .18in; }
+  .jack .p { border: 1.5px solid #000; padding: .06in .1in .05in; display: flex; flex-direction: column; min-height: 0; } .jack .p b { font-size: .3in; line-height: 1; } .jack .p small { font-size: .09in; font-weight: 700; text-transform: uppercase; }
+  .jack .p div { flex: 1; min-height: 0; padding: .04in .1in 0; } .jack .p svg { width: 100%; height: 100%; display: block; }`;
+/** Letter pages for the pallet jacks: every position's code and barcode, 24 to a page, in code order. With no racking,
+ *  the number is posted at the spot and this sheet rides on the jack: scan the pallet label, then the spot's code here. */
+export function printJackSheet(rows, per = 24) {
+  const list = [...rows].sort((a, b) => a.code.localeCompare(b.code, 'en', { numeric: true })); const pages = [];
+  for (let i = 0; i < list.length; i += per) pages.push(`<section class="jack"><header><b>NEXUS · position scan sheet</b><span>${esc(list[i].code)} to ${esc(list[Math.min(i + per, list.length) - 1].code)} · page ${i / per + 1} of ${Math.ceil(list.length / per)}</span></header><div class="grid">${list.slice(i, i + per).map((l) => `<div class="p"><b>${esc(l.code)}</b><small>${esc(l.zone || '')}</small><div>${bars(`LOC-${l.code}`)}</div></div>`).join('')}</div></section>`);
+  return printPages(pages, 'jack', '8.5in 11in', 'Pallet-jack scan sheet', true, SHEET_CSS);
 }
 // "P-65..P-72" or "P-65, P-66" -> list of codes
 export function expandCodes(text) {

@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 //   ?window=floor|admin#k=<key>   inside any other site: no login at all, a connection key decides what the window shows
 const q = new URLSearchParams(window.location.search);
 export const EMBED = q.has('embed');
+export const EMBED_VIEW = q.get('embed') === 'receiving' ? 'receiving' : 'map';   // ?embed=receiving puts the Receiving screen inside a WMS
 export const WINDOW = ['floor', 'admin'].includes(q.get('window')) ? q.get('window') : null;
 export const WINDOW_KEY = WINDOW ? new URLSearchParams(window.location.hash.slice(1)).get('k') || '' : '';   // in the #fragment: never sent to a server or written to its logs
 export const WMS_ORIGINS = ['https://wms.shipbay3pl.com', 'https://wmsshipbay.netlify.app'];
@@ -17,3 +18,5 @@ export const day = (d) => (d ? new Date(d).toLocaleDateString('en-US', { month: 
 export const stamp = (d) => (d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—');
 export const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const rpc = async (fn, args) => { const { data, error } = await supabase.rpc(fn, args); if (error) throw new Error(error.message); return data; };
+export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+export const fmtStamp = (d) => `${new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · ${new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
