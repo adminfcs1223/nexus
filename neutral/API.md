@@ -1,7 +1,13 @@
 # Nexus integration API, v1 (draft 1.0.0, 2026-11-22)
 
-Status: built and tested on the Nexus side against a local database with synthetic pallets. Not hosted anywhere yet. Not
-yet called by Souled's or ShipBay's real application.
+Status: running on the Nexus staging project. Souled's development environment has connected and passed its first tests.
+No production system calls it.
+
+## Staging
+- Base URL: `https://ankoqruedjujyefhrmtw.supabase.co/functions/v1/nexus` (so the map is `GET <base>/v1/map`).
+- Staging keys are bound to the test floor `HILLSBOROUGH-TEST`: the canonical map with synthetic data only.
+- Each system keeps its key in a server-side secret named `NEXUS_STAGING_API_KEY`, in an environment that is not its production backend.
+- Staging keys issued so far carry `read` and `calendar`. `POST /v1/pallets/*` answers 403 for them.
 
 ## Rules
 - Every path starts with `/v1`. A change that would break a caller becomes `/v2`; `/v1` keeps working alongside it.
