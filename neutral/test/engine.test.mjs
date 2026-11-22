@@ -4,19 +4,41 @@ import test from 'node:test'; import assert from 'node:assert/strict'; import pg
 const here = path.dirname(fileURLToPath(import.meta.url)); const base = 'postgres://postgres@127.0.0.1:54318';
 const admin = new pg.Client(`${base}/postgres`); await admin.connect(); await admin.query('drop database if exists nexusneutral'); await admin.query('create database nexusneutral'); await admin.end();
 const pool = new pg.Pool({ connectionString: `${base}/nexusneutral`, max: 30 });
-for (const f of ['001_core.sql', '002_v1_map.sql']) await pool.query(fs.readFileSync(path.join(here, '..', f), 'utf8'));
+for (const f of ['001_core.sql', '002_floor_map.sql', '003_calendar.sql']) await pool.query(fs.readFileSync(path.join(here, '..', f), 'utf8'));
 const q = async (sql, p) => (await pool.query(sql, p)).rows; const one = async (sql, p) => Object.values((await q(sql, p))[0])[0];
 const co = async (code, name) => one(`insert into nexus.companies (code, name) values ($1, $2) returning id`, [code, name]);
 const SOULED = await co('SOULED', 'Souled Worldwide'), SHIPBAY = await co('SHIPBAY', 'ShipBay3PL');
-const key = (c, sys, scopes) => one(`select nexus.integration_create('test', $1, $2, $3)`, [c, sys, scopes]);
+const key = (c, sys, scopes, wh = 'HILLSBOROUGH-TEST') => one(`select nexus.integration_create('test', $1, $2, $3, $4)`, [c, sys, wh, scopes]);
 const kSouled = await key(SOULED, 'souled-wms', ['read', 'move']), kShipbay = await key(SHIPBAY, 'shipbay-wms', ['read', 'move']), kReadOnly = await key(SHIPBAY, 'shipbay-dashboard', ['read']);
 let n = 0; const place = (k, kind, pallet, to, from = null, idem = `t-${++n}`) => one(`select nexus.api_place($1, $2, $3, $4, $5, $6)`, [k, kind, pallet, to, from, idem]);
 const occ = async (k, code) => (await one(`select nexus.api_occupancy($1)`, [k])).locations.find((l) => l.code === code);
 test.after(() => pool.end());
 
-test('the v1 map is the registry: 72 positions drawn, 64 open; 2 staging, 1 open; 1 dock', async () => {
-  const r = (await q(`select kind, status, count(*)::int n from nexus.locations group by 1, 2 order by 1, 2`)).map((x) => `${x.kind}/${x.status}/${x.n}`);
-  assert.deepEqual(r, ['dock/open/1', 'pallet/open/64', 'pallet/unavailable/8', 'staging/open/1', 'staging/unavailable/1']);
+const run = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `P-${String(a + i).padStart(2, '0')}`);
+test('the corrected map: 66 pallet positions (36 outbound, 30 inbound) and 2 staging on each floor; no code renumbered', async () => {
+  for (const wh of ['HILLSBOROUGH', 'HILLSBOROUGH-TEST']) {
+    const r = (await q(`select kind, status, count(*)::int n from nexus.locations where warehouse = $1 group by 1, 2 order by 1, 2`, [wh])).map((x) => `${x.kind}/${x.status}/${x.n}`);
+    assert.deepEqual(r, ['dock/open/1', 'pallet/open/66', 'pallet/unavailable/6', 'staging/open/2']);
+    const line = async (block, col) => (await q(`select code from nexus.locations where warehouse = $1 and map_block = $2 and map_col = $3 order by map_row`, [wh, block, col])).map((x) => x.code);
+    assert.deepEqual(await line('inbound', 1), run(1, 15)); assert.deepEqual(await line('inbound', 2), run(19, 33));
+    assert.deepEqual(await line('outbound', 1), run(37, 54)); assert.deepEqual(await line('outbound', 2), run(55, 72));
+    assert.deepEqual((await q(`select code from nexus.locations where warehouse = $1 and kind = 'pallet' and status = 'unavailable' order by code`, [wh])).map((x) => x.code), [...run(16, 18), ...run(34, 36)]);
+    assert.deepEqual(await line('staging', 1).then(async (a) => [...a, ...(await line('staging', 2))]), ['STG-01', 'STG-02']);
+  }
+});
+test('the live floor starts with nothing on it, says so, and refuses assign / move / release; reading still works', async () => {
+  const live = await key(SHIPBAY, 'shipbay-wms', ['read', 'move', 'calendar'], 'HILLSBOROUGH');
+  const o = await one(`select nexus.api_occupancy($1)`, [live]);
+  assert.deepEqual([o.warehouse, o.test, o.occupancy_state, o.moves_enabled], ['HILLSBOROUGH', false, 'not_initialized', false]);
+  assert.equal(o.locations.length, 75); assert.ok(o.locations.every((l) => l.used === 0 && l.occupants.length === 0));
+  for (const [kind, to] of [['assign', 'P-01'], ['move', 'P-02'], ['release', null]]) {
+    const r = await one(`select nexus.api_place($1, $2, 'PSKU-000001', $3, null, $4)`, [live, kind, to, `live-${kind}`]); assert.deepEqual([r.ok, r.error, r.occupancy_state], [false, 'occupancy_not_initialized', 'not_initialized']);
+  }
+  assert.deepEqual(await q(`select 1 from nexus.occupancy o join nexus.locations l on l.id = o.location_id where l.warehouse = 'HILLSBOROUGH'`), []);
+  assert.deepEqual(await q(`select 1 from nexus.pallets where warehouse = 'HILLSBOROUGH'`), [], 'not even a pallet record was made');
+  await assert.rejects(pool.query(`update nexus.warehouses set moves_enabled = true where code = 'HILLSBOROUGH'`), /check/, 'the database itself refuses to switch moves on before the baseline is verified');
+  const mapLive = await one(`select nexus.api_map($1)`, [live]), mapTest = await one(`select nexus.api_map($1)`, [kSouled]);
+  assert.equal(mapLive.checksum, mapTest.checksum, 'the test floor draws exactly the live floor'); assert.equal(mapLive.positions.length, 69); assert.equal(mapLive.not_drawn.length, 6);
 });
 test('1-3: Souled assigns a pallet; ShipBay sees the position taken by Souled and cannot take it', async () => {
   const r = await place(kSouled, 'assign', 'SW-0001', 'P-01'); assert.equal(r.ok, true); assert.equal(r.free, 0);
@@ -45,19 +67,19 @@ test('7: twenty simultaneous assignments from both companies cannot overfill one
   assert.equal(moves.filter((x) => x.ok).length, 1, 'two pallets moved to one position at once: one arrives');
 });
 test('8: a failed move leaves the pallet where it was', async () => {
-  const where = async () => one(`select l.code from nexus.occupancy o join nexus.locations l on l.id = o.location_id join nexus.pallets p on p.id = o.pallet_id where p.external_id = 'SW-0001' and p.company_id = $1`, [SOULED]);
+  const where = async () => one(`select l.code from nexus.occupancy o join nexus.locations l on l.id = o.location_id join nexus.pallets p on p.id = o.pallet_id where p.external_id = 'SW-0001' and p.company_id = $1 and p.warehouse = 'HILLSBOROUGH-TEST'`, [SOULED]);
   const before = await where();
-  assert.equal((await place(kSouled, 'move', 'SW-0001', 'P-65')).error, 'location_unavailable'); assert.equal((await place(kSouled, 'move', 'SW-0001', 'NOPE-1')).error, 'location_not_found');
-  assert.equal((await place(kSouled, 'move', 'SW-0001', 'P-20', 'P-64')).error, 'pallet_elsewhere', 'stale: the caller thought it was somewhere else');
+  assert.equal((await place(kSouled, 'move', 'SW-0001', 'P-16')).error, 'location_unavailable'); assert.equal((await place(kSouled, 'move', 'SW-0001', 'NOPE-1')).error, 'location_not_found');
+  assert.equal((await place(kSouled, 'move', 'SW-0001', 'P-20', 'P-33')).error, 'pallet_elsewhere', 'stale: the caller thought it was somewhere else');
   assert.equal(await where(), before);
 });
 test('capacity and blocking: staging is not limited; a blocked location refuses; capacity never drops below what stands there', async () => {
   for (let i = 0; i < 5; i++) assert.equal((await place(kShipbay, 'assign', `STG-${i}`, 'STG-01')).ok, true);
   assert.deepEqual((await occ(kSouled, 'STG-01')).occupants, [{ company: 'SHIPBAY', pallets: 5 }]);
-  assert.equal((await one(`select nexus.location_set('admin:test', 'STG-01', null, null, 3)`)).error, 'capacity_below_occupancy');
-  await one(`select nexus.location_set('admin:test', 'P-30', 'blocked', 'Leak from the roof', null)`);
+  assert.equal((await one(`select nexus.location_set('admin:test', 'HILLSBOROUGH-TEST', 'STG-01', null, null, 3)`)).error, 'capacity_below_occupancy');
+  await one(`select nexus.location_set('admin:test', 'HILLSBOROUGH-TEST', 'P-30', 'blocked', 'Leak from the roof', null)`);
   const r = await place(kSouled, 'assign', 'SW-0100', 'P-30'); assert.deepEqual([r.error, r.message], ['location_blocked', 'Leak from the roof']);
-  await one(`select nexus.location_set('admin:test', 'P-30', 'open', null, 2)`); assert.equal((await place(kSouled, 'assign', 'SW-0100', 'P-30', null, 'retry-new-key')).free, 1);
+  await one(`select nexus.location_set('admin:test', 'HILLSBOROUGH-TEST', 'P-30', 'open', null, 2)`); assert.equal((await place(kSouled, 'assign', 'SW-0100', 'P-30', null, 'retry-new-key')).free, 1);
   assert.equal((await place(kShipbay, 'assign', 'PSKU-000901', 'P-30')).free, 0, 'a position can be shared when its capacity allows');
 });
 test('release frees the position; the pallet can be assigned again later', async () => {
@@ -81,4 +103,8 @@ test('15 and 18: after an outage a system catches up from the feed, and every re
   assert.equal(page.changes.length + rest.changes.length, mine.changes.length, 'paging by the last number misses nothing'); assert.deepEqual((await one(`select nexus.api_changes($1, $2)`, [kSouled, mine.last])).changes, []);
   const hist = await one(`select nexus.api_moves($1, 'SW-0001')`, [kSouled]); assert.ok(hist.moves.some((m) => m.result === 'location_unavailable') && hist.moves.some((m) => m.result === 'ok'), 'refused requests are kept too');
   assert.ok((await one(`select count(*)::int from nexus.audit_log where action in ('integration_created', 'location_changed')`)) >= 5);
+});
+test('after every synthetic test the live floor is still empty and its feed is silent', async () => {
+  assert.equal(await one(`select count(*)::int from nexus.occupancy o join nexus.locations l on l.id = o.location_id where l.warehouse = 'HILLSBOROUGH'`), 0);
+  assert.equal(await one(`select count(*)::int from nexus.change_log where warehouse = 'HILLSBOROUGH'`), 0); assert.equal(await one(`select count(*)::int from nexus.moves where warehouse = 'HILLSBOROUGH'`), 0);
 });
