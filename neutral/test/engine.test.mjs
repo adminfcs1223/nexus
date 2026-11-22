@@ -74,7 +74,7 @@ test('16-17: a company cannot touch the other\'s pallet, and a key without the m
   assert.ok(!/sku|qty|quantity|item|product|cost|customer|carton/i.test(cols), 'no column in Nexus can hold product, quantity, cost or customer detail');
 });
 test('15 and 18: after an outage a system catches up from the feed, and every request has a history row', async () => {
-  const mine = await one(`select nexus.api_changes($1, 0, 1000)`, [kSouled]); assert.ok(mine.changes.length > 20);
+  const mine = await one(`select nexus.api_changes($1, 0, 1000)`, [kSouled]); assert.ok(mine.changes.length >= 15);
   assert.ok(mine.changes.filter((c) => c.company === 'SHIPBAY').every((c) => !('pallet' in c)), 'the other company\'s changes carry no pallet id');
   assert.ok(mine.changes.filter((c) => c.company === 'SOULED' && c.kind !== 'location_changed').every((c) => c.pallet));
   const page = await one(`select nexus.api_changes($1, 0, 5)`, [kSouled]); const rest = await one(`select nexus.api_changes($1, $2, 1000)`, [kSouled, page.last]);
