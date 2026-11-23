@@ -62,5 +62,13 @@ Final approved layout (version 4 moved staging to sit directly beneath P-15 and 
 | 423 | `occupancy_not_initialized` (the floor's baseline is not verified; assign, move and release are off) |
 | 503 | `unavailable` (nothing was changed; retry with the same key) |
 
+## Feed entries a system must act on
+- `map_changed`: fetch the map again.
+- `occupancy_initialized`, `occupancy_reverted`: a floor's baseline was entered or taken back; read occupancy again in full.
+- `movements_stopped`, `movements_enabled`: the floor was locked or reopened.
+- `nexus_restored`: Nexus was recovered from a backup. Read the map and occupancy again in full, treat every movement sent
+  since the time your own records show Nexus last confirmed as unconfirmed, and re-send those with their original
+  Idempotency-Key once the floor reopens. Feed numbers jump far ahead after a restore; keep reading from your last number.
+
 ## Not in v1 yet
 Push notifications (webhooks): a system polls `/v1/changes`. People's sign-in and the admin screens. Baseline entry tools.
