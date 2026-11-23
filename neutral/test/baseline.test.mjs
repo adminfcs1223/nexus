@@ -2,9 +2,9 @@
 import test from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath } from 'node:url';
 import { validate, parseCsv, POSITIONS, report } from '../baseline/validate.mjs';
 const T = '2026-12-05T09:00:00-05:00';
-// a clean floor: Souled at P-01 and P-02, ShipBay at P-31, two ShipBay pallets in STG-01, everything else empty
+// a clean floor: Souled at P-01 and P-02, ShipBay at P-31 and one in each staging spot, everything else empty
 const floor = (who, edit = (rows) => rows) => edit(POSITIONS.flatMap((p) => {
-  const full = { 'P-01': [['SOULED', 'SW-1001']], 'P-02': [['SOULED', 'SW-1002']], 'P-31': [['SHIPBAY', 'PSKU-000101']], 'STG-01': [['SHIPBAY', 'PSKU-000102'], ['SHIPBAY', 'PSKU-000103']] }[p.code];
+  const full = { 'P-01': [['SOULED', 'SW-1001']], 'P-02': [['SOULED', 'SW-1002']], 'P-31': [['SHIPBAY', 'PSKU-000101']], 'STG-01': [['SHIPBAY', 'PSKU-000102']], 'STG-02': [['SHIPBAY', 'PSKU-000103']] }[p.code];
   return full ? full.map(([company, pallet_id]) => ({ position: p.code, state: 'OCCUPIED', company, pallet_id, counted_by: who, counted_at: T })) : [{ position: p.code, state: 'EMPTY', company: '', pallet_id: '', counted_by: who, counted_at: T }];
 }));
 const codes = (r, level) => r.findings.filter((x) => !level || x.level === level).map((x) => x.code).sort();
@@ -17,8 +17,9 @@ test('the tool cannot write: it imports no database or network module and says s
 });
 test('two agreeing counts of all 68 positions give a fingerprint; any change to the floor changes it', () => {
   const r = validate({ count: floor('Ana'), second: floor('Ben') });
-  assert.deepEqual([r.ready_for_joint_approval, r.summary.positions_recorded, r.summary.occupied_positions, r.summary.empty_positions, r.summary.pallets], [true, 68, 4, 64, { SOULED: 2, SHIPBAY: 3 }]);
-  assert.match(r.baseline_fingerprint, /^[0-9a-f]{64}$/); assert.equal(r.baseline.length, 68); assert.equal(r.baseline[0], 'P-01=SOULED SW-1001');
+  assert.deepEqual([r.ready_for_joint_approval, r.summary.positions_recorded, r.summary.occupied_positions, r.summary.empty_positions, r.summary.pallets], [true, 68, 5, 63, { SOULED: 2, SHIPBAY: 3 }]);
+  assert.match(r.baseline_fingerprint, /^[0-9a-f]{64}$/); assert.equal(r.baseline.length, 68); assert.deepEqual(r.baseline[0], { position: 'P-01', pallets: [{ company: 'SOULED', pallet: 'SW-1001' }] }); assert.deepEqual(r.baseline[5], { position: 'P-06', pallets: [] });
+  assert.deepEqual([r.format_version, r.counters], [2, { count_1: ['Ana'], count_2: ['Ben'] }]);
   assert.equal(validate({ count: floor('Cy'), second: floor('Di') }).baseline_fingerprint, r.baseline_fingerprint, 'who counted does not change the baseline');
   const moved = (rows) => rows.map((x) => (x.pallet_id === 'SW-1002' ? { ...x, pallet_id: 'SW-1003' } : x));
   assert.notEqual(validate({ count: floor('Ana', moved), second: floor('Ben', moved) }).baseline_fingerprint, r.baseline_fingerprint);
@@ -50,7 +51,7 @@ test('each company\'s own records are compared with the count; differences block
     SOULED: [{ pallet_id: 'SW-1001', position: 'P-01' }, { pallet_id: 'SW-1002', position: 'P-05' }, { pallet_id: 'SW-9999', position: 'P-20' }],
     SHIPBAY: [{ pallet_id: 'PSKU-000101', position: 'P-31' }, { pallet_id: 'PSKU-000102', position: '' }] } });
   assert.deepEqual(codes(r, 'discrepancy'), ['in_wms_not_on_floor', 'on_floor_not_in_wms', 'position_differs']); assert.equal(r.ready_for_joint_approval, false);
-  const ok = validate({ count: floor('Ana'), second: floor('Ben'), wms: { SOULED: [{ pallet_id: 'SW-1001', position: 'P-01' }, { pallet_id: 'sw-1002', position: 'p-02' }], SHIPBAY: [{ pallet_id: 'PSKU-000101', position: 'P-31' }, { pallet_id: 'PSKU-000102', position: 'STG-01' }, { pallet_id: 'PSKU-000103', position: 'STG-01' }] } });
+  const ok = validate({ count: floor('Ana'), second: floor('Ben'), wms: { SOULED: [{ pallet_id: 'SW-1001', position: 'P-01' }, { pallet_id: 'sw-1002', position: 'p-02' }], SHIPBAY: [{ pallet_id: 'PSKU-000101', position: 'P-31' }, { pallet_id: 'PSKU-000102', position: 'STG-01' }, { pallet_id: 'PSKU-000103', position: 'STG-02' }] } });
   assert.equal(ok.ready_for_joint_approval, true);
 });
 test('known test-floor pallet ids can never enter a real baseline', () => {
@@ -62,4 +63,11 @@ test('a filled sheet read from CSV behaves the same, quotes and line endings inc
   const csv = (who) => '﻿position,state,company,pallet_id,counted_by,counted_at,note\r\n' + floor(who).map((x) => `${x.position},${x.state},${x.company},${x.pallet_id},"${who}, floor lead",${x.counted_at},"said ""ok"""`).join('\r\n') + '\r\n';
   const r = validate({ count: parseCsv(csv('Ana')), second: parseCsv(csv('Ben')) }); assert.equal(r.ready_for_joint_approval, true);
   assert.equal(r.baseline_fingerprint, validate({ count: floor('Ana'), second: floor('Ben') }).baseline_fingerprint); assert.match(report(r), /READY FOR JOINT APPROVAL/); assert.match(report(r), /DRY RUN/);
+});
+test('staging holds one pallet until a verified capacity is given', () => {
+  const two = (rows) => rows.map((x) => (x.position === 'STG-02' ? { ...x, position: 'STG-01' } : x)).concat([{ position: 'STG-02', state: 'EMPTY', company: '', pallet_id: '', counted_by: rows[0].counted_by, counted_at: T }]);
+  const r = validate({ count: floor('Ana', two), second: floor('Ben', two) });
+  assert.match(r.findings.find((x) => x.code === 'conflicting_placement').message, /STG-01 holds one pallet \(staging capacity has not been verified, so one\), but 2/); assert.equal(r.baseline_fingerprint, null);
+  const ok = validate({ count: floor('Ana', two), second: floor('Ben', two), capacity: { 'STG-01': 2 } }); assert.deepEqual([ok.ready_for_joint_approval, ok.capacity_used], [true, { 'STG-01': 2 }]);
+  assert.throws(() => validate({ count: floor('Ana'), second: floor('Ben'), capacity: { 'STG-09': 2 } }));
 });

@@ -13,9 +13,13 @@ and nothing here touches the live Nexus, ShipBay or Souled.
 - `service/` — the HTTP layer (`handler.mjs` is one Request-in, Response-out function; `server.mjs` runs it on Node).
 - `API.md` — the versioned contract.
 - `preview/render.mjs` — draws the prelaunch map from the service's own answers.
+- `004_baseline.sql` — baseline controls for a real floor: operators and roles, submit / approve / initialize / revert, unlock
+  approvals and unlock, stop, capacity verification, discrepancies, floor status and audit, snapshot digest.
+- `ops/backup-rehearsal.sh` — backup, restore into a scratch database, and table-by-table comparison.
+- `migration/` — old site numbering to map version 4 (a mapping for people; nothing is imported).
 - `baseline/` — dry-run tooling for the real floor's first occupancy baseline: `make-sheet.mjs` writes the blank count sheet,
   `validate.mjs` checks filled sheets and prints a report. It opens no database or network connection.
-- `test/` — `node --test neutral/test/*.test.mjs` against a throwaway Postgres on 127.0.0.1:54318 (27 tests; the 8 baseline tests need no database).
+- `test/` — `node --test neutral/test/*.test.mjs` against a throwaway Postgres on 127.0.0.1:54318 (37 tests; the 9 validator tests need no database).
 
 Not built yet: hosting, people's sign-in and roles, admin screens, baseline entry and verification, webhooks.
 Nexus stores no product, quantity, cost or customer field; a test fails if such a column is ever added.

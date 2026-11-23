@@ -1,0 +1,79 @@
+old_code,old_square,existed_as_old_record,new_code,note
+P-01,inbound column 1 row 1,yes,P-01,"same code, same square"
+P-02,inbound column 1 row 2,yes,P-02,"same code, same square"
+P-03,inbound column 1 row 3,yes,P-03,"same code, same square"
+P-04,inbound column 1 row 4,yes,P-04,"same code, same square"
+P-05,inbound column 1 row 5,yes,P-05,"same code, same square"
+P-06,inbound column 1 row 6,yes,P-06,"same code, same square"
+P-07,inbound column 1 row 7,yes,P-07,"same code, same square"
+P-08,inbound column 1 row 8,yes,P-08,"same code, same square"
+P-09,inbound column 1 row 9,yes,P-09,"same code, same square"
+P-10,inbound column 1 row 10,yes,P-10,"same code, same square"
+P-11,inbound column 1 row 11,yes,P-11,"same code, same square"
+P-12,inbound column 1 row 12,yes,P-12,"same code, same square"
+P-13,inbound column 1 row 13,yes,P-13,"same code, same square"
+P-14,inbound column 1 row 14,yes,P-14,"same code, same square"
+P-15,inbound column 1 row 15,yes,P-15,"same code, same square"
+P-16,inbound column 1 row 16,yes,STG-01,square is now a staging spot
+P-17,inbound column 1 row 17,yes,(none),square no longer holds a pallet
+P-18,inbound column 1 row 18,yes,(none),square no longer holds a pallet
+P-19,inbound column 2 row 1,yes,P-16,CODE CHANGES
+P-20,inbound column 2 row 2,yes,P-17,CODE CHANGES
+P-21,inbound column 2 row 3,yes,P-18,CODE CHANGES
+P-22,inbound column 2 row 4,yes,P-19,CODE CHANGES
+P-23,inbound column 2 row 5,yes,P-20,CODE CHANGES
+P-24,inbound column 2 row 6,yes,P-21,CODE CHANGES
+P-25,inbound column 2 row 7,yes,P-22,CODE CHANGES
+P-26,inbound column 2 row 8,yes,P-23,CODE CHANGES
+P-27,inbound column 2 row 9,yes,P-24,CODE CHANGES
+P-28,inbound column 2 row 10,yes,P-25,CODE CHANGES
+P-29,inbound column 2 row 11,yes,P-26,CODE CHANGES
+P-30,inbound column 2 row 12,yes,P-27,CODE CHANGES
+P-31,inbound column 2 row 13,yes,P-28,CODE CHANGES
+P-32,inbound column 2 row 14,yes,P-29,CODE CHANGES
+P-33,inbound column 2 row 15,yes,P-30,CODE CHANGES
+P-34,inbound column 2 row 16,yes,STG-02,square is now a staging spot
+P-35,inbound column 2 row 17,yes,(none),square no longer holds a pallet
+P-36,inbound column 2 row 18,yes,(none),square no longer holds a pallet
+P-37,outbound column 1 row 1,yes,P-31,CODE CHANGES
+P-38,outbound column 1 row 2,yes,P-32,CODE CHANGES
+P-39,outbound column 1 row 3,yes,P-33,CODE CHANGES
+P-40,outbound column 1 row 4,yes,P-34,CODE CHANGES
+P-41,outbound column 1 row 5,yes,P-35,CODE CHANGES
+P-42,outbound column 1 row 6,yes,P-36,CODE CHANGES
+P-43,outbound column 1 row 7,yes,P-37,CODE CHANGES
+P-44,outbound column 1 row 8,yes,P-38,CODE CHANGES
+P-45,outbound column 1 row 9,yes,P-39,CODE CHANGES
+P-46,outbound column 1 row 10,yes,P-40,CODE CHANGES
+P-47,outbound column 1 row 11,yes,P-41,CODE CHANGES
+P-48,outbound column 1 row 12,yes,P-42,CODE CHANGES
+P-49,outbound column 1 row 13,yes,P-43,CODE CHANGES
+P-50,outbound column 1 row 14,yes,P-44,CODE CHANGES
+P-51,outbound column 1 row 15,yes,P-45,CODE CHANGES
+P-52,outbound column 1 row 16,yes,P-46,CODE CHANGES
+P-53,outbound column 1 row 17,yes,P-47,CODE CHANGES
+P-54,outbound column 1 row 18,yes,P-48,CODE CHANGES
+P-55,outbound column 2 row 1,yes,P-49,CODE CHANGES
+P-56,outbound column 2 row 2,yes,P-50,CODE CHANGES
+P-57,outbound column 2 row 3,yes,P-51,CODE CHANGES
+P-58,outbound column 2 row 4,yes,P-52,CODE CHANGES
+P-59,outbound column 2 row 5,yes,P-53,CODE CHANGES
+P-60,outbound column 2 row 6,yes,P-54,CODE CHANGES
+P-61,outbound column 2 row 7,yes,P-55,CODE CHANGES
+P-62,outbound column 2 row 8,yes,P-56,CODE CHANGES
+P-63,outbound column 2 row 9,yes,P-57,CODE CHANGES
+P-64,outbound column 2 row 10,yes,P-58,CODE CHANGES
+P-65,outbound column 2 row 11,no (drawn only),P-59,CODE CHANGES
+P-66,outbound column 2 row 12,no (drawn only),P-60,CODE CHANGES
+P-67,outbound column 2 row 13,no (drawn only),P-61,CODE CHANGES
+P-68,outbound column 2 row 14,no (drawn only),P-62,CODE CHANGES
+P-69,outbound column 2 row 15,no (drawn only),P-63,CODE CHANGES
+P-70,outbound column 2 row 16,no (drawn only),P-64,CODE CHANGES
+P-71,outbound column 2 row 17,no (drawn only),P-65,CODE CHANGES
+P-72,outbound column 2 row 18,no (drawn only),P-66,CODE CHANGES
+STG-01,"staging, below the inbound columns",yes,STG-01,same code; drawn directly beneath P-15
+STG-02,staging,no (drawn only),STG-02,same code; drawn directly beneath P-30
+RCV-DOCK,dock,yes,RCV-DOCK,"the dock itself, not a pallet position"
+A-01..B-04 (shelves),ShipBay private shelf,yes,(not in Nexus),ShipBay-only storage; stays in ShipBay WMS
+OB-01,ShipBay private shelf,yes,(not in Nexus),ShipBay-only storage; stays in ShipBay WMS
+RET-01,ShipBay private shelf,yes,(not in Nexus),ShipBay-only storage; stays in ShipBay WMS
