@@ -20,7 +20,7 @@ and nothing here touches the live Nexus, ShipBay or Souled.
 - `008_admin_hardening.sql`, `009_owner_role.sql` — administrator access hardened: short sessions with authenticator codes, one
   recorded entry point, separated authority, append-only audit, break-glass codes, an owner role with no login. Local only.
 - `007_destinations_only.sql` — pallets are stored only at drawn destinations; the dock stays visible and can never be assigned
-  or moved into. Local only.
+  or moved into. On Nexus staging since 2026-11-23 12:25 ET (rollback: `ops/rollback-007.sql`).
 - `client/occupancy-check.mjs` — reference check of an occupancy answer against the map.
 - `ops/backup-rehearsal.sh` — backup, restore into a scratch database, and table-by-table comparison.
 - `migration/` — old site numbering to map version 4 (a mapping for people; nothing is imported).

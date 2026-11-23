@@ -72,7 +72,7 @@ Final approved layout (version 4 moved staging to sit directly beneath P-15 and 
 | 401 | `unauthorized` |
 | 403 | `forbidden` (key lacks the scope) |
 | 404 | `pallet_not_found`, `location_not_found`, `not_found` |
-| 409 | `location_not_a_destination` (not deployed yet: see `007_destinations_only.sql`), `location_full`, `location_blocked`, `location_unavailable`, `pallet_elsewhere`, `pallet_not_placed`, `already_there`, `idempotency_key_reused` |
+| 409 | `location_not_a_destination` (the location exists but has no square on the map, e.g. `RCV-DOCK`; on staging since 2026-11-23), `location_full`, `location_blocked`, `location_unavailable`, `pallet_elsewhere`, `pallet_not_placed`, `already_there`, `idempotency_key_reused` |
 | 423 | `occupancy_not_initialized` (the floor's baseline is not verified; assign, move and release are off) |
 | 503 | `unavailable` (nothing was changed; retry with the same key) |
 
