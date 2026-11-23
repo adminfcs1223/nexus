@@ -51,6 +51,19 @@ Final approved layout (version 4 moved staging to sit directly beneath P-15 and 
 - `map_version` and `checksum`: store them. A `map_changed` entry in `/v1/changes`, or a different checksum, means fetch the map again.
 - Current staging value: version 4, checksum `be3cc8f3e9134cb4dfe7d3ac41773bc5d231ed56b4a42c05f5939467d67c8c4f`.
 
+## Reading occupancy (`GET /v1/occupancy`) next to the map
+- The answer lists EVERY location in the floor's registry, occupied or not: the same codes as the map's `positions`.
+  On map version 4 that is 69: the 68 put-away destinations (`P-01` to `P-66`, `STG-01`, `STG-02`) and `RCV-DOCK`.
+- A put-away destination is a map position that has a square (`x` and `y`). `RCV-DOCK` has `kind: "dock"` and no square:
+  it is in the registry, it is not a destination, and it is normally empty (`used: 0`).
+- Validate against the map answer, not against a fixed list of 68: every occupancy code must be one of the map's
+  `positions`; every map position must appear; a location with no square must have `used: 0`. Treat an unknown code, a
+  missing position, or a pallet standing on a location with no square as an error. Do not drop entries you do not draw.
+- `capacity` and `free` are `null` where no limit is set (today `STG-01`, `STG-02`, `RCV-DOCK`).
+- Each entry: `code, kind, zone, status, capacity, used, free, occupants[{company, pallets}], your_pallets[], updated_at`.
+  `your_pallets` holds only the caller's own pallet ids; another company appears in `occupants` as a name and a count.
+- A reference implementation of this check is `neutral/client/occupancy-check.mjs`.
+
 ## Error codes
 | HTTP | Codes |
 |---|---|
