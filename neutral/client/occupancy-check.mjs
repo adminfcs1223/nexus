@@ -13,7 +13,8 @@ export function checkOccupancy(map, occupancy) {
   if (!map?.ok || !Array.isArray(map.positions)) return { ok: false, errors: [{ code: 'bad_map', location: null, message: 'the map answer is not usable' }] };
   if (!occupancy?.ok || !Array.isArray(occupancy.locations)) return { ok: false, errors: [{ code: 'bad_occupancy', location: null, message: 'the occupancy answer is not usable' }] };
   if (occupancy.warehouse !== map.warehouse) add('floor_mismatch', null, `the map is for ${map.warehouse}, the occupancy answer for ${occupancy.warehouse}`);
-  const known = new Map(map.positions.map((p) => [p.code, p])); const isDestination = (p) => p && Number.isInteger(p.x) && Number.isInteger(p.y);
+  // the map names every registry location: `positions` (with or without a square) and `not_drawn` (kept codes that are not on the drawing)
+  const known = new Map([...map.positions.map((p) => [p.code, p]), ...(map.not_drawn || []).map((p) => [p.code, { ...p, x: null, y: null, registryOnly: true }])]); const isDestination = (p) => p && Number.isInteger(p.x) && Number.isInteger(p.y);
   const seen = new Set(); const destinations = []; const registryOnly = [];
   for (const l of occupancy.locations) {
     const code = l?.code; const used = Number(l?.used);
@@ -22,12 +23,12 @@ export function checkOccupancy(map, occupancy) {
     if (!Number.isInteger(used) || used < 0) add('occupancy_bad_count', code, `${code} has no usable count`);
     const p = known.get(code);
     if (!p) { add('occupancy_unknown_location', code, `${code} is not on the map${used > 0 ? ` and ${used} pallet(s) stand there` : ''}`); continue; }
-    if (p.kind !== l.kind) add('occupancy_kind_mismatch', code, `${code} is ${p.kind} on the map and ${l.kind} in the occupancy answer`);
+    if (!p.registryOnly && p.kind !== l.kind) add('occupancy_kind_mismatch', code, `${code} is ${p.kind} on the map and ${l.kind} in the occupancy answer`);
     if (isDestination(p)) { destinations.push(l); if (l.capacity != null && used > l.capacity) add('occupancy_over_capacity', code, `${code} holds ${l.capacity} and ${used} stand there`); continue; }
     // on the map, with no square: not somewhere a pallet may be shown. Empty is expected; occupied is a real problem.
     if (used > 0) add('occupancy_off_map_occupied', code, `${used} pallet(s) stand at ${code}, which is not a put-away destination`);
     else registryOnly.push(code);
   }
-  for (const p of map.positions) if (!seen.has(p.code)) add(isDestination(p) ? 'occupancy_missing_destination' : 'occupancy_missing_location', p.code, `${p.code} is on the map and missing from the occupancy answer`);
+  for (const p of [...map.positions, ...(map.not_drawn || [])]) if (!seen.has(p.code)) add(isDestination(p) ? 'occupancy_missing_destination' : 'occupancy_missing_location', p.code, `${p.code} is on the map and missing from the occupancy answer`);
   return { ok: errors.length === 0, destinations: destinations.length, registry_only: registryOnly.sort(), occupied: destinations.filter((l) => l.used > 0).map((l) => l.code).sort(), errors };
 }

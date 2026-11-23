@@ -5,7 +5,7 @@ import { serve } from '../service/server.mjs'; import { checkOccupancy } from '.
 const here = path.dirname(fileURLToPath(import.meta.url)); const base = 'postgres://postgres@127.0.0.1:54318';
 const admin = new pg.Client(`${base}/postgres`); await admin.connect(); await admin.query('drop database if exists nexusoccupancy'); await admin.query('create database nexusoccupancy'); await admin.end();
 const db = new pg.Pool({ connectionString: `${base}/nexusoccupancy` });
-for (const f of ['001_core.sql', '002_floor_map.sql', '003_calendar.sql']) await db.query(fs.readFileSync(path.join(here, '..', f), 'utf8'));   // exactly what the staging service runs on
+for (const f of ['001_core.sql', '002_floor_map.sql', '003_calendar.sql', ...(process.env.NEXUS_WITH || '').split(',').filter(Boolean)]) await db.query(fs.readFileSync(path.join(here, '..', f), 'utf8'));   // exactly what the staging service runs on
 const one = async (sql, p) => Object.values((await db.query(sql, p)).rows[0])[0];
 const co = (code) => one(`insert into nexus.companies (code, name) values ($1, $1) returning id`, [code]); const SOULED = await co('SOULED'), SHIPBAY = await co('SHIPBAY');
 const key = (c, s) => one(`select nexus.integration_create('test', $1, $2, 'HILLSBOROUGH-TEST', '{read,move}')`, [c, s]); const kSouled = await key(SOULED, 'souled'), kShipbay = await key(SHIPBAY, 'shipbay');
@@ -47,8 +47,11 @@ test('genuinely wrong answers are never ignored', async () => {
   assert.deepEqual(edit((l, o) => { o.warehouse = 'HILLSBOROUGH'; }), ['floor_mismatch:null']);
   assert.equal(checkOccupancy(map, { ok: false, error: 'unauthorized' }).errors[0].code, 'bad_occupancy');
 });
-test('finding: Nexus will today accept a pallet AT the dock, with no limit; a reading system then sees it and must not ignore it', async () => {
-  const a = await call(kSouled, 'POST', '/v1/pallets/assign', { pallet: 'SYN-DOCK-1', to: 'RCV-DOCK' }); assert.equal(a.ok, true, 'accepted: the dock is an open location with no capacity limit');
+const DOCK_BLOCKED = (process.env.NEXUS_WITH || '').includes('007');
+test(DOCK_BLOCKED ? 'with the destinations-only rule loaded, Nexus refuses a pallet at the dock' : 'finding: without the destinations-only rule Nexus accepts a pallet AT the dock, with no limit; a reading system sees it and must not ignore it', async () => {
+  const a = await call(kSouled, 'POST', '/v1/pallets/assign', { pallet: 'SYN-DOCK-1', to: 'RCV-DOCK' });
+  if (DOCK_BLOCKED) { assert.deepEqual([a.ok, a.error], [false, 'location_not_a_destination']); assert.equal(checkOccupancy(...(await both(kShipbay))).ok, true); return; }
+  assert.equal(a.ok, true, 'accepted: the dock is an open location with no capacity limit');
   assert.equal((await call(kSouled, 'POST', '/v1/pallets/assign', { pallet: 'SYN-DOCK-2', to: 'RCV-DOCK' })).ok, true, 'and a second one');
   const seenByShipbay = checkOccupancy(...(await both(kShipbay))); assert.deepEqual(seenByShipbay.errors.map((e) => [e.code, e.location]), [['occupancy_off_map_occupied', 'RCV-DOCK']]);
   assert.match(seenByShipbay.errors[0].message, /2 pallet\(s\) stand at RCV-DOCK/);

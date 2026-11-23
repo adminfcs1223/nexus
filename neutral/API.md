@@ -52,7 +52,8 @@ Final approved layout (version 4 moved staging to sit directly beneath P-15 and 
 - Current staging value: version 4, checksum `be3cc8f3e9134cb4dfe7d3ac41773bc5d231ed56b4a42c05f5939467d67c8c4f`.
 
 ## Reading occupancy (`GET /v1/occupancy`) next to the map
-- The answer lists EVERY location in the floor's registry, occupied or not: the same codes as the map's `positions`.
+- The answer lists EVERY location in the floor's registry, occupied or not: the same codes as the map's `positions` plus
+  any in the map's `not_drawn` list (empty on map version 4).
   On map version 4 that is 69: the 68 put-away destinations (`P-01` to `P-66`, `STG-01`, `STG-02`) and `RCV-DOCK`.
 - A put-away destination is a map position that has a square (`x` and `y`). `RCV-DOCK` has `kind: "dock"` and no square:
   it is in the registry, it is not a destination, and it is normally empty (`used: 0`).
@@ -71,7 +72,7 @@ Final approved layout (version 4 moved staging to sit directly beneath P-15 and 
 | 401 | `unauthorized` |
 | 403 | `forbidden` (key lacks the scope) |
 | 404 | `pallet_not_found`, `location_not_found`, `not_found` |
-| 409 | `location_full`, `location_blocked`, `location_unavailable`, `pallet_elsewhere`, `pallet_not_placed`, `already_there`, `idempotency_key_reused` |
+| 409 | `location_not_a_destination` (not deployed yet: see `007_destinations_only.sql`), `location_full`, `location_blocked`, `location_unavailable`, `pallet_elsewhere`, `pallet_not_placed`, `already_there`, `idempotency_key_reused` |
 | 423 | `occupancy_not_initialized` (the floor's baseline is not verified; assign, move and release are off) |
 | 503 | `unavailable` (nothing was changed; retry with the same key) |
 

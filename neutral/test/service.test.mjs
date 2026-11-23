@@ -6,7 +6,7 @@ import { serve } from '../service/server.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url)); const base = 'postgres://postgres@127.0.0.1:54318';
 const admin = new pg.Client(`${base}/postgres`); await admin.connect(); await admin.query('drop database if exists nexusservice'); await admin.query('create database nexusservice'); await admin.end();
 const db = new pg.Pool({ connectionString: `${base}/nexusservice` });
-for (const f of ['001_core.sql', '002_floor_map.sql', '003_calendar.sql']) await db.query(fs.readFileSync(path.join(here, '..', f), 'utf8'));
+for (const f of ['001_core.sql', '002_floor_map.sql', '003_calendar.sql', ...(process.env.NEXUS_WITH || '').split(',').filter(Boolean)]) await db.query(fs.readFileSync(path.join(here, '..', f), 'utf8'));
 const one = async (sql, p) => Object.values((await db.query(sql, p)).rows[0])[0];
 const co = (code, name) => one(`insert into nexus.companies (code, name) values ($1, $2) returning id`, [code, name]);
 const SOULED = await co('SOULED', 'Souled Worldwide'), SHIPBAY = await co('SHIPBAY', 'ShipBay3PL');
