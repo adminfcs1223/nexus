@@ -2,7 +2,7 @@
 // Synthetic operators and a rehearsal floor only. The floor called HILLSBOROUGH here is a copy inside the throwaway
 // database; the tests prove the controls cannot reach it. No hosted system is touched.
 import test from 'node:test'; import assert from 'node:assert/strict'; import pg from 'pg'; import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath } from 'node:url';
-import { validate, POSITIONS } from '../baseline/validate.mjs'; import { serveAdmin } from '../service/admin-server.mjs'; import { makeAdminHandler } from '../service/admin.mjs'; import { serve } from '../service/server.mjs';
+import { validate, POSITIONS } from '../baseline/validate.mjs'; import { serveAdmin } from './legacy/admin-v1-server.mjs'; import { makeAdminHandler } from './legacy/admin-v1.mjs'; import { serve } from '../service/server.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url)); const host = '127.0.0.1:54318'; const DBN = 'nexusadmin';
 const admin = new pg.Client(`postgres://postgres@${host}/postgres`); await admin.connect(); await admin.query(`drop database if exists ${DBN}`); await admin.query(`create database ${DBN}`);
 const owner = new pg.Pool({ connectionString: `postgres://postgres@${host}/${DBN}` });

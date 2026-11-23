@@ -15,8 +15,10 @@ and nothing here touches the live Nexus, ShipBay or Souled.
 - `preview/render.mjs` — draws the prelaunch map from the service's own answers.
 - `004_baseline.sql` — baseline controls for a real floor: operators and roles, submit / approve / initialize / revert, unlock
   approvals and unlock, stop, capacity verification, discrepancies, floor status and audit, snapshot digest.
-- `006_admin_controls.sql`, `service/admin.mjs`, `ADMIN.md` — the administrator controls: floor-assigned operators, table-level
+- `006_admin_controls.sql`, `ADMIN.md` — the administrator controls: floor-assigned operators, table-level
   lock guards, service roles and the permission audit. Local only.
+- `008_admin_hardening.sql`, `009_owner_role.sql` — administrator access hardened: short sessions with authenticator codes, one
+  recorded entry point, separated authority, append-only audit, break-glass codes, an owner role with no login. Local only.
 - `007_destinations_only.sql` — pallets are stored only at drawn destinations; the dock stays visible and can never be assigned
   or moved into. Local only.
 - `client/occupancy-check.mjs` — reference check of an occupancy answer against the map.

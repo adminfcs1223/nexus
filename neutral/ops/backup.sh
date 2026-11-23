@@ -14,6 +14,9 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"; . "$HERE/lib.sh"
 SRC="$1"; OUT="$2"; MODE="${3:-}"; mkdir -p "$OUT"; chmod 700 "$OUT"
 [ -e "$OUT/nexus.dump" ] && { echo "refusing to overwrite an existing backup in $OUT"; exit 2; }
+# Fail closed: a database with administrator hardening (008) holds authenticator secrets, session hashes and break-glass
+# code hashes in tables this tool does not yet know how to leave out or redact. Until it is taught, it takes no backup of one.
+if [ "$(q "$SRC" "select to_regclass('nexus.operator_mfa') is not null")" = t ]; then echo "refusing: this database has administrator hardening (008); backup.sh must be extended for its secret-bearing tables first"; exit 2; fi
 ARGS=(--format=custom --schema=nexus --no-owner --no-privileges --exclude-table-data=nexus.key_handoff)
 if [ "$MODE" != "--with-credentials" ]; then ARGS+=(--exclude-table-data=nexus.integrations --exclude-table-data=nexus.operators); mkdir -p "$OUT/redacted"; fi
 DSQL="$(digest_sql "$SRC")"
