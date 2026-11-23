@@ -13,7 +13,9 @@ and nothing here touches the live Nexus, ShipBay or Souled.
 - `service/` — the HTTP layer (`handler.mjs` is one Request-in, Response-out function; `server.mjs` runs it on Node).
 - `API.md` — the versioned contract.
 - `preview/render.mjs` — draws the prelaunch map from the service's own answers.
-- `test/` — `node --test neutral/test/*.test.mjs` against a throwaway Postgres on 127.0.0.1:54318 (18 tests).
+- `baseline/` — dry-run tooling for the real floor's first occupancy baseline: `make-sheet.mjs` writes the blank count sheet,
+  `validate.mjs` checks filled sheets and prints a report. It opens no database or network connection.
+- `test/` — `node --test neutral/test/*.test.mjs` against a throwaway Postgres on 127.0.0.1:54318 (27 tests; the 8 baseline tests need no database).
 
 Not built yet: hosting, people's sign-in and roles, admin screens, baseline entry and verification, webhooks.
 Nexus stores no product, quantity, cost or customer field; a test fails if such a column is ever added.
