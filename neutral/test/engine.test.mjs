@@ -114,3 +114,35 @@ test('after every synthetic test the live floor is still empty and its feed is s
   assert.equal(await one(`select count(*)::int from nexus.occupancy o join nexus.locations l on l.id = o.location_id where l.warehouse = 'HILLSBOROUGH'`), 0);
   assert.equal(await one(`select count(*)::int from nexus.change_log where warehouse = 'HILLSBOROUGH'`), 0); assert.equal(await one(`select count(*)::int from nexus.moves where warehouse = 'HILLSBOROUGH'`), 0);
 });
+test('idempotency covers every position named: same key replays only the identical request', async () => {
+  const k = await key(SOULED, 'souled-idem', ['read', 'move']); const go = (kind, pallet, to, from, idem) => one(`select nexus.api_place($1, $2, $3, $4, $5, $6)`, [k, kind, pallet, to, from, idem]);
+  const at = async (p) => (await q(`select l.code from nexus.occupancy o join nexus.locations l on l.id = o.location_id join nexus.pallets x on x.id = o.pallet_id where x.external_id = $1 and x.company_id = $2 and x.warehouse = 'HILLSBOROUGH-TEST'`, [p, SOULED]))[0]?.code ?? null;
+  const n = () => one(`select count(*)::int from nexus.moves where idempotency_key like 'idm-%'`);
+  // assign
+  const a = await go('assign', 'IDM-1', 'P-60', null, 'idm-a'); assert.equal(a.ok, true);
+  assert.deepEqual([(await go('assign', 'IDM-1', ' p-60 ', null, 'idm-a')).replayed, (await go('assign', 'IDM-1', 'P-60', 'P-01', 'idm-a')).replayed], [true, true], 'identical (case, spaces and an unused from aside): replayed');
+  for (const [kind, pallet, to, from, why] of [['assign', 'IDM-1', 'P-61', null, 'different destination'], ['assign', 'IDM-2', 'P-60', null, 'different pallet'], ['move', 'IDM-1', 'P-60', null, 'different action']])
+    assert.equal((await go(kind, pallet, to, from, 'idm-a')).error, 'idempotency_key_reused', why);
+  assert.equal(await at('IDM-1'), 'P-60'); assert.equal(await at('IDM-2'), null);
+  // move
+  const m = await go('move', 'IDM-1', 'P-61', 'P-60', 'idm-m'); assert.deepEqual([m.ok, m.location], [true, 'P-61']);
+  const rm = await go('move', 'IDM-1', 'P-61', 'P-60', 'idm-m'); assert.deepEqual([rm.replayed, rm.seq], [true, m.seq]);
+  for (const [to, from, why] of [['P-62', 'P-60', 'different destination'], ['P-61', 'P-59', 'different source'], ['P-61', null, 'source left out'], [null, 'P-60', 'destination left out']])
+    assert.equal((await go('move', 'IDM-1', to, from, 'idm-m')).error, 'idempotency_key_reused', why);
+  assert.equal(await at('IDM-1'), 'P-61', 'none of the mismatched requests moved it');
+  // a refusal stays a refusal for its key; a new key is a new attempt
+  await go('assign', 'IDM-3', 'P-62', null, 'idm-b');
+  const full = await go('assign', 'IDM-4', 'P-62', null, 'idm-full'); assert.equal(full.error, 'location_full');
+  await go('release', 'IDM-3', null, 'P-62', 'idm-r');
+  const again = await go('assign', 'IDM-4', 'P-62', null, 'idm-full'); assert.deepEqual([again.error, again.replayed], ['location_full', true], 'the position is free now, the old key still answers no');
+  assert.equal((await go('assign', 'IDM-4', 'P-63', null, 'idm-full')).error, 'idempotency_key_reused'); assert.equal(await at('IDM-4'), null);
+  assert.equal((await go('assign', 'IDM-4', 'P-62', null, 'idm-new')).ok, true);
+  // release
+  const rr = await go('release', 'IDM-3', null, 'P-62', 'idm-r'); assert.deepEqual([rr.replayed, rr.released_from], [true, 'P-62']);
+  assert.equal((await go('release', 'IDM-3', null, 'P-01', 'idm-r')).error, 'idempotency_key_reused', 'different source'); assert.equal((await go('release', 'IDM-3', null, null, 'idm-r')).error, 'idempotency_key_reused', 'source left out');
+  assert.equal((await go('release', 'IDM-3', 'P-10', 'P-62', 'idm-r')).replayed, true, 'a destination means nothing to a release');
+  assert.equal(await n(), 6, 'one history row per key; mismatches and replays add none');
+  // a row written before this rule (no request stored) keeps the earlier matching
+  await pool.query(`update nexus.moves set request = null where idempotency_key = 'idm-m'`);
+  assert.equal((await go('move', 'IDM-1', 'P-62', null, 'idm-m')).replayed, true); assert.equal((await go('move', 'IDM-2', 'P-62', null, 'idm-m')).error, 'idempotency_key_reused');
+});

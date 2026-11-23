@@ -47,12 +47,14 @@ create table nexus.occupancy (
 create index occupancy_location on nexus.occupancy (location_id);
 
 -- every request to assign, move or release, accepted or refused, kept forever. (requester, idempotency_key) is unique:
--- the same request sent twice is answered from this row and changes nothing.
+-- the same request sent twice is answered from this row and changes nothing. `request` holds the positions the caller
+-- named (to / from, as sent, trimmed and upper-cased), so a key reused with different positions is recognised.
+-- Rows written before 2026-11-23 have no `request` and are matched on action and pallet only.
 create table nexus.moves (
   id bigserial primary key, at timestamptz not null default now(), warehouse text not null references nexus.warehouses(code), kind text not null check (kind in ('assign', 'move', 'release')),
   company_id uuid not null references nexus.companies(id), pallet_id uuid references nexus.pallets(id), external_id text not null,
   from_location uuid references nexus.locations(id), to_location uuid references nexus.locations(id),
-  requester text not null, idempotency_key text not null, result text not null, response jsonb not null,
+  requester text not null, idempotency_key text not null, result text not null, response jsonb not null, request jsonb,
   unique (requester, idempotency_key));
 create index moves_pallet on nexus.moves (pallet_id, id desc); create index moves_to on nexus.moves (to_location, id desc); create index moves_from on nexus.moves (from_location, id desc);
 
@@ -75,10 +77,13 @@ create function nexus._hash(p text) returns text language sql immutable as $$ se
 create function nexus.place(p_requester text, p_warehouse text, p_company uuid, p_source text, p_kind text, p_external_id text, p_to text, p_expected_from text, p_idem text) returns jsonb
 language plpgsql set search_path to 'nexus' as $$
 declare v_ext text := btrim(coalesce(p_external_id, '')); v_idem text := btrim(coalesce(p_idem, '')); w warehouses; m moves; p pallets; l locations; o occupancy; v_from locations; v_used int; r jsonb; v_seq bigint;
+  v_to text := nullif(upper(btrim(coalesce(p_to, ''))), ''); v_exp text := nullif(upper(btrim(coalesce(p_expected_from, ''))), ''); v_req jsonb;
 begin
   if p_kind not in ('assign', 'move', 'release') then return jsonb_build_object('ok', false, 'error', 'bad_request', 'message', 'kind is assign, move or release'); end if;
   if v_idem = '' or length(v_idem) > 128 then return jsonb_build_object('ok', false, 'error', 'bad_request', 'message', 'an idempotency key of 1 to 128 characters is required'); end if;
   if v_ext = '' or length(v_ext) > 64 then return jsonb_build_object('ok', false, 'error', 'bad_request', 'message', 'the pallet id is required'); end if;
+  -- what counts as "the same request": the positions that matter for this action (assign: to · move: to and from · release: from)
+  v_req := case p_kind when 'assign' then jsonb_build_object('to', v_to) when 'move' then jsonb_build_object('to', v_to, 'from', v_exp) else jsonb_build_object('from', v_exp) end;
   select * into w from warehouses where code = p_warehouse;
   if w.code is null then return jsonb_build_object('ok', false, 'error', 'bad_request', 'message', 'unknown warehouse'); end if;
   -- the prelaunch lock: nothing is recorded, so the same request can be sent again once the floor is live
@@ -87,7 +92,7 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(p_requester || chr(31) || v_idem, 0));   -- the same key twice at the same moment: one waits for the other's row
   select * into m from moves where requester = p_requester and idempotency_key = v_idem;
   if found then
-    if m.kind <> p_kind or m.external_id <> v_ext then return jsonb_build_object('ok', false, 'error', 'idempotency_key_reused', 'message', 'this key was already used for a different request'); end if;
+    if m.kind <> p_kind or m.external_id <> v_ext or (m.request is not null and m.request <> v_req) then return jsonb_build_object('ok', false, 'error', 'idempotency_key_reused', 'message', 'this key was already used for a different request'); end if;
     return m.response || jsonb_build_object('replayed', true);
   end if;
 
@@ -123,8 +128,8 @@ begin
       end if;
     end if;
   end if;
-  insert into moves (warehouse, kind, company_id, pallet_id, external_id, from_location, to_location, requester, idempotency_key, result, response)
-  values (w.code, p_kind, p_company, p.id, v_ext, v_from.id, l.id, p_requester, v_idem, case when (r ->> 'ok')::boolean then 'ok' else r ->> 'error' end, r);
+  insert into moves (warehouse, kind, company_id, pallet_id, external_id, from_location, to_location, requester, idempotency_key, result, response, request)
+  values (w.code, p_kind, p_company, p.id, v_ext, v_from.id, l.id, p_requester, v_idem, case when (r ->> 'ok')::boolean then 'ok' else r ->> 'error' end, r, v_req);
   return r;
 end $$;
 

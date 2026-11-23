@@ -15,8 +15,16 @@ No production system calls it.
 - A key belongs to one company, one system and one floor (the live floor or the test floor) and carries scopes: `read`, `move`, `calendar`.
   Who the caller is comes from the key and from nothing in the request.
 - Every answer is JSON with `ok`. A refusal is `{"ok": false, "error": "<code>", "message": "…"}`.
-- `POST /v1/pallets/*` needs an `Idempotency-Key` header (1 to 128 characters). The same key sent again returns the first
-  answer with `"replayed": true` and changes nothing. On a timeout or a 503, send the same request with the same key.
+- `POST /v1/pallets/*` needs an `Idempotency-Key` header (1 to 128 characters). One key per intended operation:
+  - Same key + the identical request (action, pallet, and the positions that matter: assign `to` · move `to` and `from` ·
+    release `from`; case and surrounding spaces ignored): the first answer again with `"replayed": true`. Nothing moves.
+  - Same key + a different action, pallet, source or destination, including leaving out a `from` that was sent before: 409
+    `idempotency_key_reused`. Nothing moves.
+  - A refusal (for example `location_full`) is kept under its key: the same key keeps answering that refusal even after the
+    floor changes. A new attempt needs a new key.
+  - Keys are scoped to one credential and are kept with the movement history permanently; there is no expiry.
+  - Not kept, so safe to resend with the same key: 400, 401, 403, 423 and 503 answers.
+  - Requests recorded before 2026-11-23 are matched on action and pallet only.
 - Pallet ids are stored exactly as the owning system sends them. Nexus assigns no pallet ids and no format.
 
 ## Calls
