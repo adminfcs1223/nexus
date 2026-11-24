@@ -12,6 +12,8 @@ and nothing here touches the live Nexus, ShipBay or Souled.
 - `003_calendar.sql` — shared dock calendar; each company's system owns its own events.
 - `service/` — the HTTP layer (`handler.mjs` is one Request-in, Response-out function; `server.mjs` runs it on Node).
 - `API.md` — the versioned contract.
+- `MVP-CONTRACT.md` — the short contract for both warehouse applications, with recorded request and answer examples
+  (built by `contract/build.py` from `test/mvp-acceptance.test.mjs`).
 - `preview/render.mjs` — draws the prelaunch map from the service's own answers.
 - `004_baseline.sql` — baseline controls for a real floor: operators and roles, submit / approve / initialize / revert, unlock
   approvals and unlock, stop, capacity verification, discrepancies, floor status and audit, snapshot digest.

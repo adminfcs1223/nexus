@@ -1,0 +1,1412 @@
+[
+  {
+    "note": "The map",
+    "caller": "SOULED",
+    "request": "GET /v1/map",
+    "body": null,
+    "status": 200,
+    "response": {
+      "ok": true,
+      "test": true,
+      "layout": {
+        "grid": {
+          "x": "left to right",
+          "y": "top to bottom",
+          "cols": 5,
+          "rows": 18,
+          "origin": "top-left"
+        },
+        "blocks": [
+          {
+            "x": [
+              1,
+              2
+            ],
+            "y": [
+              1,
+              18
+            ],
+            "key": "outbound",
+            "side": "left",
+            "label": "Outbound"
+          },
+          {
+            "x": [
+              3,
+              3
+            ],
+            "y": [
+              1,
+              18
+            ],
+            "key": "walkway",
+            "side": "centre",
+            "label": "Walkway"
+          },
+          {
+            "x": [
+              4,
+              5
+            ],
+            "y": [
+              1,
+              15
+            ],
+            "key": "inbound",
+            "side": "right",
+            "label": "Inbound"
+          },
+          {
+            "x": [
+              4,
+              5
+            ],
+            "y": [
+              16,
+              16
+            ],
+            "key": "staging",
+            "side": "right",
+            "label": "Staging"
+          }
+        ]
+      },
+      "checksum": "be3cc8f3e9134cb4dfe7d3ac41773bc5d231ed56b4a42c05f5939467d67c8c4f",
+      "landmarks": [
+        {
+          "x": [
+            1,
+            2
+          ],
+          "at": "top-left",
+          "key": "exit",
+          "edge": "top",
+          "label": "Exit"
+        },
+        {
+          "x": [
+            4,
+            5
+          ],
+          "at": "top-right",
+          "key": "dock",
+          "edge": "top",
+          "label": "Dock"
+        },
+        {
+          "x": [
+            3,
+            3
+          ],
+          "at": "centre",
+          "key": "walkway",
+          "label": "Walkway"
+        },
+        {
+          "x": [
+            3,
+            3
+          ],
+          "at": "bottom-centre",
+          "key": "entrance",
+          "edge": "bottom",
+          "label": "Entrance"
+        },
+        {
+          "x": [
+            4,
+            5
+          ],
+          "at": "bottom-right",
+          "key": "prep",
+          "edge": "bottom",
+          "label": "Prep area"
+        }
+      ],
+      "not_drawn": [],
+      "positions": [
+        {
+          "x": null,
+          "y": null,
+          "col": 1,
+          "row": 1,
+          "code": "RCV-DOCK",
+          "kind": "dock",
+          "zone": "receiving",
+          "block": "dock",
+          "status": "open",
+          "capacity": null
+        },
+        {
+          "x": 4,
+          "y": 1,
+          "col": 1,
+          "row": 1,
+          "code": "P-01",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 2,
+          "col": 1,
+          "row": 2,
+          "code": "P-02",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 3,
+          "col": 1,
+          "row": 3,
+          "code": "P-03",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 4,
+          "col": 1,
+          "row": 4,
+          "code": "P-04",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 5,
+          "col": 1,
+          "row": 5,
+          "code": "P-05",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 6,
+          "col": 1,
+          "row": 6,
+          "code": "P-06",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 7,
+          "col": 1,
+          "row": 7,
+          "code": "P-07",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 8,
+          "col": 1,
+          "row": 8,
+          "code": "P-08",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 9,
+          "col": 1,
+          "row": 9,
+          "code": "P-09",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 10,
+          "col": 1,
+          "row": 10,
+          "code": "P-10",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 11,
+          "col": 1,
+          "row": 11,
+          "code": "P-11",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 12,
+          "col": 1,
+          "row": 12,
+          "code": "P-12",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 13,
+          "col": 1,
+          "row": 13,
+          "code": "P-13",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 14,
+          "col": 1,
+          "row": 14,
+          "code": "P-14",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 15,
+          "col": 1,
+          "row": 15,
+          "code": "P-15",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 1,
+          "col": 2,
+          "row": 1,
+          "code": "P-16",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 2,
+          "col": 2,
+          "row": 2,
+          "code": "P-17",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 3,
+          "col": 2,
+          "row": 3,
+          "code": "P-18",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 4,
+          "col": 2,
+          "row": 4,
+          "code": "P-19",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 5,
+          "col": 2,
+          "row": 5,
+          "code": "P-20",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 6,
+          "col": 2,
+          "row": 6,
+          "code": "P-21",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 7,
+          "col": 2,
+          "row": 7,
+          "code": "P-22",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 8,
+          "col": 2,
+          "row": 8,
+          "code": "P-23",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 9,
+          "col": 2,
+          "row": 9,
+          "code": "P-24",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 10,
+          "col": 2,
+          "row": 10,
+          "code": "P-25",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 11,
+          "col": 2,
+          "row": 11,
+          "code": "P-26",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 12,
+          "col": 2,
+          "row": 12,
+          "code": "P-27",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 13,
+          "col": 2,
+          "row": 13,
+          "code": "P-28",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 14,
+          "col": 2,
+          "row": 14,
+          "code": "P-29",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 5,
+          "y": 15,
+          "col": 2,
+          "row": 15,
+          "code": "P-30",
+          "kind": "pallet",
+          "zone": "inbound",
+          "block": "inbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 1,
+          "col": 1,
+          "row": 1,
+          "code": "P-31",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "col": 1,
+          "row": 2,
+          "code": "P-32",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 3,
+          "col": 1,
+          "row": 3,
+          "code": "P-33",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 4,
+          "col": 1,
+          "row": 4,
+          "code": "P-34",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 5,
+          "col": 1,
+          "row": 5,
+          "code": "P-35",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "col": 1,
+          "row": 6,
+          "code": "P-36",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "col": 1,
+          "row": 7,
+          "code": "P-37",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 8,
+          "col": 1,
+          "row": 8,
+          "code": "P-38",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 9,
+          "col": 1,
+          "row": 9,
+          "code": "P-39",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 10,
+          "col": 1,
+          "row": 10,
+          "code": "P-40",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 11,
+          "col": 1,
+          "row": 11,
+          "code": "P-41",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 12,
+          "col": 1,
+          "row": 12,
+          "code": "P-42",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 13,
+          "col": 1,
+          "row": 13,
+          "code": "P-43",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 14,
+          "col": 1,
+          "row": 14,
+          "code": "P-44",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 15,
+          "col": 1,
+          "row": 15,
+          "code": "P-45",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 16,
+          "col": 1,
+          "row": 16,
+          "code": "P-46",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 17,
+          "col": 1,
+          "row": 17,
+          "code": "P-47",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 1,
+          "y": 18,
+          "col": 1,
+          "row": 18,
+          "code": "P-48",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 1,
+          "col": 2,
+          "row": 1,
+          "code": "P-49",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "col": 2,
+          "row": 2,
+          "code": "P-50",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 3,
+          "col": 2,
+          "row": 3,
+          "code": "P-51",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 4,
+          "col": 2,
+          "row": 4,
+          "code": "P-52",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 5,
+          "col": 2,
+          "row": 5,
+          "code": "P-53",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "col": 2,
+          "row": 6,
+          "code": "P-54",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 7,
+          "col": 2,
+          "row": 7,
+          "code": "P-55",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 8,
+          "col": 2,
+          "row": 8,
+          "code": "P-56",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 9,
+          "col": 2,
+          "row": 9,
+          "code": "P-57",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 10,
+          "col": 2,
+          "row": 10,
+          "code": "P-58",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 11,
+          "col": 2,
+          "row": 11,
+          "code": "P-59",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 12,
+          "col": 2,
+          "row": 12,
+          "code": "P-60",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 13,
+          "col": 2,
+          "row": 13,
+          "code": "P-61",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 14,
+          "col": 2,
+          "row": 14,
+          "code": "P-62",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 15,
+          "col": 2,
+          "row": 15,
+          "code": "P-63",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 16,
+          "col": 2,
+          "row": 16,
+          "code": "P-64",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 17,
+          "col": 2,
+          "row": 17,
+          "code": "P-65",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 2,
+          "y": 18,
+          "col": 2,
+          "row": 18,
+          "code": "P-66",
+          "kind": "pallet",
+          "zone": "outbound",
+          "block": "outbound",
+          "status": "open",
+          "capacity": 1
+        },
+        {
+          "x": 4,
+          "y": 16,
+          "col": 1,
+          "row": 1,
+          "code": "STG-01",
+          "kind": "staging",
+          "zone": "staging",
+          "block": "staging",
+          "status": "open",
+          "capacity": null
+        },
+        {
+          "x": 5,
+          "y": 16,
+          "col": 2,
+          "row": 1,
+          "code": "STG-02",
+          "kind": "staging",
+          "zone": "staging",
+          "block": "staging",
+          "status": "open",
+          "capacity": null
+        }
+      ],
+      "warehouse": "HILLSBOROUGH-TEST",
+      "map_version": 4,
+      "moves_enabled": true,
+      "occupancy_state": "synthetic"
+    }
+  },
+  {
+    "note": "Occupancy entries as SHIPBAY sees them: its own pallet, the other company's pallet, an empty position",
+    "caller": "SHIPBAY",
+    "request": "GET /v1/occupancy",
+    "status": 200,
+    "response": {
+      "ok": true,
+      "warehouse": "HILLSBOROUGH-TEST",
+      "occupancy_state": "synthetic",
+      "moves_enabled": true,
+      "as_of": "2026-11-24T09:18:56.158043-05:00",
+      "locations": [
+        {
+          "code": "P-01",
+          "free": 0,
+          "kind": "pallet",
+          "used": 1,
+          "zone": "inbound",
+          "status": "open",
+          "capacity": 1,
+          "occupants": [
+            {
+              "company": "SHIPBAY",
+              "pallets": 1
+            }
+          ],
+          "updated_at": "2026-11-24T09:18:56.090036-05:00",
+          "your_pallets": [
+            "FIX-B-0001"
+          ]
+        },
+        {
+          "code": "P-02",
+          "free": 0,
+          "kind": "pallet",
+          "used": 1,
+          "zone": "inbound",
+          "status": "open",
+          "capacity": 1,
+          "occupants": [
+            {
+              "company": "SOULED",
+              "pallets": 1
+            }
+          ],
+          "updated_at": "2026-11-24T09:18:56.11769-05:00",
+          "your_pallets": []
+        },
+        {
+          "code": "P-03",
+          "free": 1,
+          "kind": "pallet",
+          "used": 0,
+          "zone": "inbound",
+          "status": "open",
+          "capacity": 1,
+          "occupants": [],
+          "updated_at": "2026-11-24T09:18:56.004525-05:00",
+          "your_pallets": []
+        },
+        "… 66 more"
+      ]
+    }
+  },
+  {
+    "note": "Destination not in use",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/assign",
+    "idempotency_key": "mvp-3",
+    "body": {
+      "pallet": "MVP-S-10",
+      "to": "P-10"
+    },
+    "status": 409,
+    "response": {
+      "ok": false,
+      "error": "location_unavailable",
+      "message": "rack removed",
+      "location": "P-10"
+    }
+  },
+  {
+    "note": "Destination blocked",
+    "caller": "SHIPBAY",
+    "request": "POST /v1/pallets/assign",
+    "idempotency_key": "mvp-4",
+    "body": {
+      "pallet": "MVP-B-11",
+      "to": "P-11"
+    },
+    "status": 409,
+    "response": {
+      "ok": false,
+      "error": "location_blocked",
+      "message": "spill",
+      "location": "P-11"
+    }
+  },
+  {
+    "note": "Assign to an empty position",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/assign",
+    "idempotency_key": "souled-assign-0001",
+    "body": {
+      "pallet": "MVP-S-1",
+      "to": "P-03"
+    },
+    "status": 200,
+    "response": {
+      "ok": true,
+      "seq": 7,
+      "free": 0,
+      "from": null,
+      "pallet": "MVP-S-1",
+      "location": "P-03"
+    }
+  },
+  {
+    "note": "Assign to an occupied position",
+    "caller": "SHIPBAY",
+    "request": "POST /v1/pallets/assign",
+    "idempotency_key": "shipbay-assign-0001",
+    "body": {
+      "pallet": "MVP-B-1",
+      "to": "P-03"
+    },
+    "status": 409,
+    "response": {
+      "ok": false,
+      "used": 1,
+      "error": "location_full",
+      "message": "that location has no room",
+      "capacity": 1,
+      "location": "P-03"
+    }
+  },
+  {
+    "note": "Destination does not exist",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/assign",
+    "idempotency_key": "mvp-30",
+    "body": {
+      "pallet": "MVP-S-3",
+      "to": "P-67"
+    },
+    "status": 404,
+    "response": {
+      "ok": false,
+      "error": "location_not_found",
+      "message": "no location with that code"
+    }
+  },
+  {
+    "note": "Destination is the dock",
+    "caller": "SHIPBAY",
+    "request": "POST /v1/pallets/assign",
+    "idempotency_key": "mvp-38",
+    "body": {
+      "pallet": "MVP-B-3",
+      "to": "RCV-DOCK"
+    },
+    "status": 409,
+    "response": {
+      "ok": false,
+      "error": "location_not_a_destination",
+      "message": "that location is not a pallet storage position",
+      "location": "RCV-DOCK"
+    }
+  },
+  {
+    "note": "Move a pallet",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/move",
+    "idempotency_key": "souled-move-0001",
+    "body": {
+      "pallet": "MVP-S-1",
+      "to": "P-05",
+      "from": "P-03"
+    },
+    "status": 200,
+    "response": {
+      "ok": true,
+      "seq": 9,
+      "free": 0,
+      "from": "P-03",
+      "pallet": "MVP-S-1",
+      "location": "P-05"
+    }
+  },
+  {
+    "note": "Release a pallet (it leaves the floor)",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/release",
+    "idempotency_key": "souled-release-0001",
+    "body": {
+      "pallet": "MVP-S-1",
+      "from": "STG-01"
+    },
+    "status": 200,
+    "response": {
+      "ok": true,
+      "seq": 12,
+      "pallet": "MVP-S-1",
+      "released_from": "STG-01"
+    }
+  },
+  {
+    "note": "The same request sent again with the same key",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/move",
+    "idempotency_key": "souled-move-0002",
+    "body": {
+      "pallet": "MVP-S-1",
+      "to": "P-06",
+      "from": "P-05"
+    },
+    "status": 200,
+    "response": {
+      "ok": true,
+      "seq": 14,
+      "free": 0,
+      "from": "P-05",
+      "pallet": "MVP-S-1",
+      "location": "P-06",
+      "replayed": true
+    }
+  },
+  {
+    "note": "The same key for a different request",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/move",
+    "idempotency_key": "souled-move-0003",
+    "body": {
+      "pallet": "MVP-S-1",
+      "to": "P-08",
+      "from": "P-07"
+    },
+    "status": 409,
+    "response": {
+      "ok": false,
+      "error": "idempotency_key_reused",
+      "message": "this key was already used for a different request"
+    }
+  },
+  {
+    "note": "A move from where the pallet no longer is",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/move",
+    "idempotency_key": "souled-move-0004",
+    "body": {
+      "pallet": "MVP-S-1",
+      "to": "P-12",
+      "from": "P-05"
+    },
+    "status": 409,
+    "response": {
+      "ok": false,
+      "error": "pallet_elsewhere",
+      "message": "the pallet is not where the request says it is",
+      "location": "P-07"
+    }
+  },
+  {
+    "note": "Assigning a pallet that is already on the floor",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/assign",
+    "idempotency_key": "mvp-49",
+    "body": {
+      "pallet": "MVP-S-1",
+      "to": "P-12"
+    },
+    "status": 409,
+    "response": {
+      "ok": false,
+      "error": "pallet_elsewhere",
+      "message": "that pallet already stands in a location; move it instead",
+      "location": "P-07"
+    }
+  },
+  {
+    "note": "Moving a pallet that is not on the floor",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/move",
+    "idempotency_key": "mvp-53",
+    "body": {
+      "pallet": "MVP-S-GONE",
+      "to": "P-13"
+    },
+    "status": 409,
+    "response": {
+      "ok": false,
+      "error": "pallet_not_placed",
+      "message": "that pallet is not in any location"
+    }
+  },
+  {
+    "note": "Moving a pallet Nexus has never seen",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/move",
+    "idempotency_key": "mvp-54",
+    "body": {
+      "pallet": "MVP-S-NEVER",
+      "to": "P-13"
+    },
+    "status": 404,
+    "response": {
+      "ok": false,
+      "error": "pallet_not_found",
+      "message": "no pallet with that id for this company"
+    }
+  },
+  {
+    "note": "Asking for the other company's pallet history",
+    "caller": "SHIPBAY",
+    "request": "GET /v1/moves?pallet=FIX-S-0001",
+    "body": null,
+    "status": 200,
+    "response": {
+      "ok": true,
+      "moves": []
+    }
+  },
+  {
+    "note": "Change feed as SHIPBAY sees it: its own entry carries the pallet id, the other company's does not",
+    "caller": "SHIPBAY",
+    "request": "GET /v1/changes?after=0",
+    "status": 200,
+    "response": {
+      "ok": true,
+      "changes": [
+        {
+          "v": 1,
+          "at": "2026-11-24T09:18:56.090036-05:00",
+          "seq": 1,
+          "kind": "pallet_assigned",
+          "pallet": "FIX-B-0001",
+          "company": "SHIPBAY",
+          "location": "P-01"
+        },
+        {
+          "v": 1,
+          "at": "2026-11-24T09:18:56.11769-05:00",
+          "seq": 2,
+          "kind": "pallet_assigned",
+          "company": "SOULED",
+          "location": "P-02"
+        },
+        "…"
+      ],
+      "last": "<highest seq returned>"
+    }
+  },
+  {
+    "note": "Moving the other company's pallet",
+    "caller": "SHIPBAY",
+    "request": "POST /v1/pallets/move",
+    "idempotency_key": "mvp-57",
+    "body": {
+      "pallet": "FIX-S-0001",
+      "to": "P-20",
+      "from": "P-02"
+    },
+    "status": 404,
+    "response": {
+      "ok": false,
+      "error": "pallet_not_found",
+      "message": "no pallet with that id for this company"
+    }
+  },
+  {
+    "note": "A key without the move scope",
+    "caller": "SOULED (read-only key)",
+    "request": "POST /v1/pallets/move",
+    "idempotency_key": "mvp-63",
+    "body": {
+      "pallet": "FIX-S-0001",
+      "to": "P-21"
+    },
+    "status": 403,
+    "response": {
+      "ok": false,
+      "error": "forbidden",
+      "message": "this key does not have the move scope"
+    }
+  },
+  {
+    "note": "Any movement on a floor that is not initialized",
+    "caller": "SOULED (real-floor key)",
+    "request": "POST /v1/pallets/assign",
+    "idempotency_key": "mvp-65",
+    "body": {
+      "pallet": "REAL-1",
+      "to": "P-03"
+    },
+    "status": 423,
+    "response": {
+      "ok": false,
+      "error": "occupancy_not_initialized",
+      "message": "Assign, move and release are switched off on this floor until its occupancy baseline is entered and verified.",
+      "occupancy_state": "not_initialized"
+    }
+  },
+  {
+    "note": "Nexus could not complete the request",
+    "caller": "SOULED",
+    "request": "POST /v1/pallets/move",
+    "idempotency_key": "souled-move-int-1",
+    "body": {
+      "pallet": "MVP-S-INT",
+      "to": "P-29",
+      "from": "P-30"
+    },
+    "status": 503,
+    "response": {
+      "ok": false,
+      "error": "unavailable",
+      "message": "Nexus could not answer. Nothing was changed; send the same request again with the same Idempotency-Key."
+    }
+  },
+  {
+    "note": "What happened to my request? The caller's own history",
+    "caller": "SOULED",
+    "request": "GET /v1/moves?pallet=MVP-S-INT",
+    "body": null,
+    "status": 200,
+    "response": {
+      "ok": true,
+      "moves": [
+        {
+          "at": "2026-11-24T09:18:56.917431-05:00",
+          "id": 71,
+          "to": "P-29",
+          "from": "P-30",
+          "kind": "move",
+          "pallet": "MVP-S-INT",
+          "result": "ok"
+        },
+        {
+          "at": "2026-11-24T09:18:56.788518-05:00",
+          "id": 70,
+          "to": "P-30",
+          "from": null,
+          "kind": "assign",
+          "pallet": "MVP-S-INT",
+          "result": "ok"
+        }
+      ]
+    }
+  }
+]

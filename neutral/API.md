@@ -7,7 +7,8 @@ No production system calls it.
 - Base URL: `https://ankoqruedjujyefhrmtw.supabase.co/functions/v1/nexus` (so the map is `GET <base>/v1/map`).
 - Staging keys are bound to the test floor `HILLSBOROUGH-TEST`: the canonical map with synthetic data only.
 - Each system keeps its key in a server-side secret named `NEXUS_STAGING_API_KEY`, in an environment that is not its production backend.
-- Staging keys issued so far carry `read` and `calendar`. `POST /v1/pallets/*` answers 403 for them.
+- Each company has two staging keys: one with `read` and `calendar`, one with `read` and `move`. `POST /v1/pallets/*` answers 403 for a key without `move`.
+- The short version for both teams, with recorded request and answer examples, is `MVP-CONTRACT.md`.
 
 ## Rules
 - Every path starts with `/v1`. A change that would break a caller becomes `/v2`; `/v1` keeps working alongside it.
