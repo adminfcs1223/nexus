@@ -1,8 +1,8 @@
 // Nexus integration service, version 1. One function: a web Request in, a web Response out. It holds no state and no
 // secrets: a system's key arrives in the Authorization header, is passed to the database, and only its hash exists there.
 // `query(sql, params)` is supplied by whatever hosts this (Node today; any runtime with fetch-style handlers later).
-export const VERSION = '1.0.0-draft';
-const STATUS = { unauthorized: 401, forbidden: 403, bad_request: 400, pallet_not_found: 404, location_not_found: 404, not_found: 404,
+export const VERSION = '1.1.0';
+const STATUS = { unauthorized: 401, forbidden: 403, bad_request: 400, location_not_confirmed: 400, pallet_not_found: 404, location_not_found: 404, not_found: 404,
   occupancy_not_initialized: 423, unavailable: 503 };   // every other refusal is a 409: the request was understood and the floor says no
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-nexus-api': VERSION, ...extra } });
 const answer = (r) => json(r, r.ok ? 200 : STATUS[r.error] || 409);
@@ -32,6 +32,7 @@ export function makeHandler(query, onError = () => {}) {
       if (m === 'GET' && path === '/v1/changes') return answer(await call('api_changes', [key, int('after') ?? 0, int('limit') ?? 200], [, 'bigint', 'integer']));
       if (m === 'GET' && path === '/v1/moves') return answer(await call('api_moves', [key, q('pallet'), int('before'), int('limit') ?? 200], [, , 'bigint', 'integer']));
       const act = m === 'POST' && path.match(/^\/v1\/pallets\/(assign|move|release)$/)?.[1];
+      if (act && ('confirmed_empty' in body || 'confirmed_by' in body)) return answer(await call('api_place_confirmed', [key, act, s(body.pallet), s(body.to), s(body.from), req.headers.get('idempotency-key'), body.confirmed_empty === true ? 'true' : '', s(body.confirmed_by)]));
       if (act) return answer(await call('api_place', [key, act, s(body.pallet), s(body.to), s(body.from), req.headers.get('idempotency-key')]));
       if (m === 'GET' && path === '/v1/calendar') {
         const from = when('from'), to = when('to'); if (from === undefined || to === undefined) return fail('bad_request', 'from and to are dates with their offset');
