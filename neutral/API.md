@@ -69,7 +69,7 @@ Final approved layout (version 4 moved staging to sit directly beneath P-15 and 
 ## Error codes
 | HTTP | Codes |
 |---|---|
-| 400 | `bad_request` |
+| 400 | `bad_request`, `location_not_confirmed` (forward-only floor: send `confirmed_empty: true` and `confirmed_by`; see `PRODUCTION-CONNECTION.md`) |
 | 401 | `unauthorized` |
 | 403 | `forbidden` (key lacks the scope) |
 | 404 | `pallet_not_found`, `location_not_found`, `not_found` |
