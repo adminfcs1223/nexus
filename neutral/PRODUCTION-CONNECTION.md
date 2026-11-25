@@ -5,6 +5,7 @@ Status: LIVE. The real floor is open in forward-only mode: it started blank and 
 - Endpoint: `https://ankoqruedjujyefhrmtw.supabase.co/functions/v1/nexus` (the key decides the floor). API version `1.1.0`.
 - Floor: `HILLSBOROUGH`. Map version 4, 69 locations. Checksum `be3cc8f3e9134cb4dfe7d3ac41773bc5d231ed56b4a42c05f5939467d67c8c4f`.
 - `occupancy_state: "forward_only"`, `moves_enabled: true`.
+- The test floor `HILLSBOROUGH-TEST` is retired (2026-11-24). Every staging key now answers 401; remove `NEXUS_STAGING_API_KEY` from use.
 - Everything in `neutral/INTEGRATION-HANDOFF.md` (commit `a465b55`) still applies. This page adds the one new rule.
 
 ## The one new rule: confirm the location before placing

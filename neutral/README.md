@@ -21,6 +21,8 @@ and nothing here touches the live Nexus, ShipBay or Souled.
   lock guards, service roles and the permission audit. Local only.
 - `010_forward_only.sql` — forward-only launch: a real floor opened blank, every placement carrying a per-location empty
   confirmation. On the hosted project since 2026-11-24; HILLSBOROUGH is open in this mode (rollback: `ops/rollback-010.sql`).
+- `011_retire_floor.sql` — archive-then-retire for a test floor (nothing deleted). HILLSBOROUGH-TEST was retired on the hosted
+  project on 2026-11-24; real HILLSBOROUGH is the only active floor.
 - `008_admin_hardening.sql`, `009_owner_role.sql` — administrator access hardened: short sessions with authenticator codes, one
   recorded entry point, separated authority, append-only audit, break-glass codes, an owner role with no login. Local only.
 - `007_destinations_only.sql` — pallets are stored only at drawn destinations; the dock stays visible and can never be assigned
