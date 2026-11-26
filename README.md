@@ -1,5 +1,13 @@
 # Nexus
 
+## Stage 1 site (live 2026-11-25)
+The site shows three tabs only: **Calendar, Warehouse Map, Pallets** (`src/Site.jsx`). They read the neutral Nexus service
+(branch `nexus-neutral`, `/site/v1/overview`): the same Hillsborough map, occupancy and calendar records Souled and ShipBay use.
+Sign-in is unchanged (the warehouse staff login); the signed-in user's token is sent, no Nexus key is in the browser.
+The older screens below (Dashboard, Receiving, Floor, Sites, FIFO, counts) are no longer shown; their code and the database
+functions they used are untouched. `?embed=1` inside the ShipBay WMS now shows the new map; `?embed=receiving` is unchanged;
+`?window=` is retired. Local preview with made-up data: `npx vite build --config test/site/vite.config.js`.
+
 Warehouse-floor system: floor map (Locations), pallets, FIFO, cycle counts, and a keyed read-only API for connected WMSes.
 Reads the same database as the ShipBay WMS, so there is one live pallet count.
 

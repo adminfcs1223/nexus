@@ -1,8 +1,9 @@
 // Sign-in shell. The screens live in Nexus.jsx and take the signed-in profile.
 import { useEffect, useState } from 'react';
 import { supabase, NEXUS_ROLES, EMBED, WINDOW, WMS_ORIGINS, setToken } from './lib.js';
-import Nexus from './Nexus.jsx';
-import Window from './Window.jsx';
+import { EMBED_VIEW } from './lib.js';
+import Site from './Site.jsx';
+import Nexus from './Nexus.jsx';   // only for ?embed=receiving inside the ShipBay WMS; no longer a visible tab here
 
 // Inside a WMS: no sign-in here. Ask the parent for the signed-in user's access token; accept it only from a known WMS origin.
 function Embedded() {
@@ -17,11 +18,12 @@ function Embedded() {
     return () => window.removeEventListener('message', on);
   }, [me]);
   if (err) return <div className="center">{err}</div>;
-  return me ? <Nexus me={me} embed /> : <div className="center">Connecting to the WMS…</div>;
+  if (!me) return <div className="center">Connecting to the WMS…</div>;
+  return EMBED_VIEW === 'receiving' ? <Nexus me={me} embed /> : <Site me={me} embed />;
 }
 
 export default function App() {
-  if (WINDOW) return <Window />;
+  if (WINDOW) return <div className="center"><p>This Nexus window has been retired.</p><p className="sm">The warehouse map is now inside each company's own system.</p></div>;
   if (EMBED) return <Embedded />;
   return <Standalone />;
 }
@@ -39,7 +41,7 @@ function Standalone() {
   if (session === undefined || (session && !me)) return <div className="center">Loading…</div>;
   if (!session) return <SignIn />;
   if (!me.active || !NEXUS_ROLES.includes(me.role)) return <div className="center"><p>This login cannot use Nexus.</p><button className="btn" onClick={() => supabase.auth.signOut()}>Sign out</button></div>;
-  return <Nexus me={me} onSignOut={() => supabase.auth.signOut()} />;
+  return <Site me={me} onSignOut={() => supabase.auth.signOut()} />;
 }
 
 function SignIn() {
@@ -60,6 +62,7 @@ function SignIn() {
   return (
     <form className="signin" onSubmit={go}>
       <img src="/brand/nexus-logo.png" alt="Nexus" />
+      <p className="sm" style={{ textAlign: 'center', margin: 0 }}>Hillsborough · shared warehouse map</p>
       <div className="seg"><button type="button" className={mode === 'pin' ? 'on' : ''} onClick={() => setMode('pin')}>Employee PIN</button><button type="button" className={mode === 'email' ? 'on' : ''} onClick={() => setMode('email')}>Email</button></div>
       {mode === 'pin' ? <><label>Employee number<input inputMode="numeric" value={no} onChange={(e) => setNo(e.target.value)} autoFocus /></label><label>PIN<input type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} /></label></>
         : <><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus /></label><label>Password<input type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></label></>}

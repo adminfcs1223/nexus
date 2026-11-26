@@ -20,3 +20,12 @@ export const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStar
 export const rpc = async (fn, args) => { const { data, error } = await supabase.rpc(fn, args); if (error) throw new Error(error.message); return data; };
 export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export const fmtStamp = (d) => `${new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · ${new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+
+// The three live screens (Site.jsx) read the neutral Nexus service: the same map, occupancy and calendar records Souled and
+// ShipBay use. The signed-in user's own short-lived token is sent; no Nexus key is in the browser.
+export const SITE_API = import.meta.env.VITE_NEXUS_SITE_API || 'https://ankoqruedjujyefhrmtw.supabase.co/functions/v1/nexus/site/v1';
+export const siteOverview = async () => {
+  const t = EMBED ? token : (await supabase.auth.getSession()).data.session?.access_token;
+  const r = await fetch(`${SITE_API}/overview`, { headers: { authorization: `Bearer ${t || ''}` }, cache: 'no-store' });
+  const j = await r.json().catch(() => ({})); if (!r.ok || !j.ok) throw new Error(j.message || 'Nexus could not answer.'); return j;
+};
