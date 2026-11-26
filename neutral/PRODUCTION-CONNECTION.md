@@ -26,16 +26,12 @@ Idempotency-Key: <one per operation>
 - Nexus stores who confirmed with the movement. The other company never sees it.
 
 ## Credentials
-Per company, bound to `HILLSBOROUGH`:
-| Key | Scope | Server-side secret | SHA-256 prefix |
-|---|---|---|---|
-| Souled movement | read + move | `NEXUS_PRODUCTION_API_KEY` | `7f333342` |
-| ShipBay movement | read + move | `NEXUS_PRODUCTION_API_KEY` | `e6476e54` |
-| Souled read-only | read | `NEXUS_PRODUCTION_READ_KEY` | `980ee00c` |
-| ShipBay read-only | read | `NEXUS_PRODUCTION_READ_KEY` | `dbb2fb38` |
-
-The owner copies each key from the Nexus pickup table into that company's server-side secret store. Never in chat, email, a
-repository, a URL, browser code or logs. Keep production and staging keys in separate secrets and never mix their data.
+Per company, bound to `HILLSBOROUGH`: one movement key (read + move) in the server-side secret `NEXUS_PRODUCTION_API_KEY`, and
+one read-only key in `NEXUS_PRODUCTION_READ_KEY`.
+Keys are issued by the owner, one at a time, with `select nexus.credential_issue_once('<COMPANY>', 'movement' | 'read');` in the
+Nexus database's SQL editor. The key is shown once in that answer and is not stored anywhere in readable form.
+Copy it straight into the server-side secret. Never into chat, an AI assistant, email, a repository, a URL, browser code or logs.
+The first set of keys (issued 2026-11-24) is being replaced; each old key is retired once its replacement is seen working.
 
 ## Connection requirements
 1. Server-to-server HTTPS only, `Authorization: Bearer <key>`.
