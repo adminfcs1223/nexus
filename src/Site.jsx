@@ -49,35 +49,43 @@ function MapTab({ d }) {
   const [sel, setSel] = useState(null);
   const drawn = d.positions.filter((p) => p.x != null && p.y != null && (p.kind === 'pallet' || p.kind === 'staging'));
   const g = d.layout?.grid || { cols: 5, rows: 18 }; const walk = (d.layout?.blocks || []).find((b) => b.key === 'walkway');
+  // the shared zone sits in extra rows above row 1 (y = -2..0); `top` shifts everything down so existing positions keep their coordinates
+  const top = g.top_rows || 0; const row = (y) => y + top;
+  const zb = (d.layout?.blocks || []).find((b) => b.shared && b.location); const zone = zb && d.positions.find((p) => p.code === zb.location && p.kind === 'zone');
   const mark = (k) => (d.landmarks || []).find((l) => l.key === k); const span = (m) => (m ? { gridColumn: `${m.x[0]} / ${m.x[1] + 1}` } : null);
   const n = (t) => drawn.filter((p) => tone(p) === t).length; const picked = sel && d.positions.find((p) => p.code === sel);
   const pallets = drawn.filter((p) => p.kind === 'pallet').length, staging = drawn.filter((p) => p.kind === 'staging').length;
   return (
     <>
       <div className="head"><h1>Warehouse Map</h1>
-        <div className="glance"><div><b>{n('open')}</b><small>Open</small></div><div><b>{n('souled') + n('both')}</b><small>Souled</small></div><div><b>{n('shipbay') + n('both')}</b><small>ShipBay</small></div>{n('off') > 0 && <div><b>{n('off')}</b><small>Out of use</small></div>}{n('unknown') > 0 && <div><b className="hot">{n('unknown')}</b><small>Unknown</small></div>}</div>
+        <div className="glance"><div><b>{n('open')}</b><small>Open</small></div><div><b>{n('souled') + n('both')}</b><small>Souled</small></div><div><b>{n('shipbay') + n('both')}</b><small>ShipBay</small></div>{n('off') > 0 && <div><b>{n('off')}</b><small>Out of use</small></div>}{n('unknown') > 0 && <div><b className="hot">{n('unknown')}</b><small>Unknown</small></div>}{zone && <div><b>{zone.used}</b><small>In receiving / outbound</small></div>}</div>
       </div>
       <div className="hbwrap">
         <div className="hbfloor" style={{ '--cols': g.cols }}>
           <div className="hbedge top" style={{ gridTemplateColumns: `repeat(${g.cols}, 1fr)` }}>{mark('exit') && <span style={span(mark('exit'))}>Exit</span>}{mark('dock') && <span className="dock" style={span(mark('dock'))}>Receiving dock</span>}</div>
-          <div className="hbcells" style={{ gridTemplateColumns: `repeat(${g.cols}, 1fr)`, gridTemplateRows: `repeat(${g.rows}, 30px)` }}>
-            {walk && <div className="hbwalk" style={{ gridColumn: `${walk.x[0]} / ${walk.x[1] + 1}`, gridRow: `${walk.y[0]} / ${walk.y[1] + 1}` }}><span>Walkway</span></div>}
-            {staging > 0 && <div className="hbstglabel" style={{ gridColumn: '4 / 6', gridRow: Math.min(...drawn.filter((p) => p.kind === 'staging').map((p) => p.y)) }}>Staging</div>}
-            {mark('prep') && <div className="hbprep" style={{ ...span(mark('prep')), gridRow: `${g.rows - 1} / ${g.rows + 1}` }}>Prep area</div>}
-            {drawn.map((p) => <button key={p.code} className={`hbtile hb-${tone(p)} ${p.kind === 'staging' ? 'hbstg' : ''} ${sel === p.code ? 'sel' : ''}`} style={{ gridColumn: p.x, gridRow: p.y }} onClick={() => setSel(sel === p.code ? null : p.code)} title={p.code}>{p.code}</button>)}
+          <div className="hbcells" style={{ gridTemplateColumns: `repeat(${g.cols}, 1fr)`, gridTemplateRows: `repeat(${g.rows + top}, 30px)` }}>
+            {walk && <div className="hbwalk" style={{ gridColumn: `${walk.x[0]} / ${walk.x[1] + 1}`, gridRow: `${row(walk.y[0])} / ${row(walk.y[1]) + 1}` }}><span>Walkway</span></div>}
+            {zone && <button className={`hbzone ${zone.status !== 'open' ? 'hb-off' : ''} ${sel === zone.code ? 'sel' : ''}`} style={{ gridColumn: `${zb.x[0]} / ${zb.x[1] + 1}`, gridRow: `${row(zb.y[0])} / ${row(zb.y[1]) + 1}` }} onClick={() => setSel(sel === zone.code ? null : zone.code)} title={zone.code}>
+              <b>Receiving / Outbound</b><small>{zone.code} · shared</small>
+              <span className="hbzchips">{(zone.occupants || []).length === 0 ? <i className="none">{zone.status === 'open' ? 'No pallets' : 'Not in use'}</i> : zone.occupants.map((o) => <i key={o.company} className={`hbco c-${COMPANY[o.company] ? o.company.toLowerCase() : 'unknown'}`}>{who(o.company)} {o.pallets}</i>)}</span>
+            </button>}
+            {staging > 0 && <div className="hbstglabel" style={{ gridColumn: '4 / 6', gridRow: row(Math.min(...drawn.filter((p) => p.kind === 'staging').map((p) => p.y))) }}>Staging</div>}
+            {mark('prep') && <div className="hbprep" style={{ ...span(mark('prep')), gridRow: `${row(g.rows - 1)} / ${row(g.rows) + 1}` }}>Prep area</div>}
+            {drawn.map((p) => <button key={p.code} className={`hbtile hb-${tone(p)} ${p.kind === 'staging' ? 'hbstg' : ''} ${sel === p.code ? 'sel' : ''}`} style={{ gridColumn: p.x, gridRow: row(p.y) }} onClick={() => setSel(sel === p.code ? null : p.code)} title={p.code}>{p.code}</button>)}
           </div>
           <div className="hbedge bottom" style={{ gridTemplateColumns: `repeat(${g.cols}, 1fr)` }}>{mark('entrance') && <span style={span(mark('entrance'))}>Entrance</span>}</div>
         </div>
         <aside className="hbside">
           <div className="hblegend"><span><i className="hb-open" />Open</span><span><i className="hb-souled" />Souled</span><span><i className="hb-shipbay" />ShipBay</span><span><i className="hb-off" />Blocked / not in use</span><span><i className="hb-unknown" />Unknown</span></div>
           {picked ? <Detail p={picked} /> : <p className="sm">Select a position to see its details.</p>}
-          <p className="sm note">{pallets} pallet positions · {staging} staging · map version {d.map_version}</p>
+          <p className="sm note">{pallets} pallet positions · {staging} staging{zone ? ' · 1 shared zone' : ''} · map version {d.map_version}</p>
         </aside>
       </div>
     </>
   );
 }
 function Detail({ p }) {
+  if (p.kind === 'zone') return <ZoneDetail p={p} />;
   const t = tone(p); const state = t === 'open' ? 'Open' : t === 'off' ? (p.status === 'blocked' ? 'Blocked' : 'Not in use') : t === 'unknown' ? 'Unknown' : 'Occupied';
   return (
     <section className="hbdetail">
@@ -94,6 +102,23 @@ function Detail({ p }) {
   );
 }
 
+function ZoneDetail({ p }) {
+  const off = p.status !== 'open'; const parts = (o) => [o.inbound > 0 && `${o.inbound} inbound`, o.outbound > 0 && `${o.outbound} outbound`].filter(Boolean).join(' · ');
+  return (
+    <section className="hbdetail">
+      <h3>{p.code}</h3>
+      <dl>
+        <dt>Type</dt><dd>Shared receiving / outbound zone</dd>
+        <dt>Status</dt><dd>{off ? (p.status === 'blocked' ? 'Blocked' : 'Not in use') : p.used > 0 ? `${p.used} ${p.used === 1 ? 'pallet' : 'pallets'}` : 'No pallets'}</dd>
+        {off && p.status_reason && <><dt>Reason</dt><dd>{p.status_reason}</dd></>}
+        {(p.occupants || []).map((o) => <span key={o.company} style={{ display: 'contents' }}><dt>{who(o.company)}</dt><dd>{o.pallets} {o.pallets === 1 ? 'pallet' : 'pallets'}{parts(o) ? ` · ${parts(o)}` : ''}</dd></span>)}
+        <dt>Capacity</dt><dd>{p.capacity == null ? 'No pallet limit' : `${p.capacity} pallets`}</dd>
+      </dl>
+      <p className="sm">Used by Souled and ShipBay at the same time. The drawn size is a floor reference, not a limit.</p>
+    </section>
+  );
+}
+
 function PalletsTab({ d }) {
   const rows = d.pallets || [];
   return (
@@ -101,7 +126,7 @@ function PalletsTab({ d }) {
       <div className="head"><h1>Pallets</h1><div className="glance"><div><b>{rows.length}</b><small>Registered</small></div></div></div>
       {rows.length === 0 ? <section><p className="sm" style={{ margin: 0 }}>No pallets are registered on the floor.</p></section> : (
         <table><thead><tr><th>Position</th><th>Company</th><th>Type</th><th>Placed</th></tr></thead>
-          <tbody>{rows.map((r, i) => <tr key={i}><td className="code">{r.location}</td><td><span className={`hbco c-${COMPANY[r.company] ? r.company.toLowerCase() : 'unknown'}`}>{who(r.company)}</span></td><td>{r.kind === 'staging' ? 'Staging' : 'Pallet position'}</td><td>{stamp(r.since)}</td></tr>)}</tbody></table>
+          <tbody>{rows.map((r, i) => <tr key={i}><td className="code">{r.location}</td><td><span className={`hbco c-${COMPANY[r.company] ? r.company.toLowerCase() : 'unknown'}`}>{who(r.company)}</span></td><td>{r.kind === 'zone' ? `Receiving / Outbound${r.zone_status ? ` · ${r.zone_status === 'inbound' ? 'Inbound' : 'Outbound'}` : ''}` : r.kind === 'staging' ? 'Staging' : 'Pallet position'}</td><td>{stamp(r.since)}</td></tr>)}</tbody></table>
       )}
     </>
   );
