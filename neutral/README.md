@@ -23,6 +23,8 @@ and nothing here touches the live Nexus, ShipBay or Souled.
   confirmation. On the hosted project since 2026-11-24; HILLSBOROUGH is open in this mode (rollback: `ops/rollback-010.sql`).
 - `011_retire_floor.sql` — archive-then-retire for a test floor (nothing deleted). HILLSBOROUGH-TEST was retired on the hosted
   project on 2026-11-24; real HILLSBOROUGH is the only active floor.
+- `014_shared_zone.sql` — Stage 2: the shared RECEIVING / OUTBOUND zone `RCV-OUT` (kind `zone`, no pallet limit, both companies at once,
+  each pallet inbound or outbound). Contract for both WMSs: `STAGE2-ZONE-CONTRACT.md`. Service `1.2.0`, map version 5.
 - `013_credential_rotation.sql` — keys are issued once on request (`credential_issue_once`) and never stored in plaintext; the old
   pickup table (`005`) is emptied and closed; an old key is retired only after its replacement is seen working.
 - `008_admin_hardening.sql`, `009_owner_role.sql` — administrator access hardened: short sessions with authenticator codes, one

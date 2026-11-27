@@ -2,8 +2,8 @@
 
 Status: LIVE. The real floor is open in forward-only mode: it started blank and is filled only by real receiving.
 
-- Endpoint: `https://ankoqruedjujyefhrmtw.supabase.co/functions/v1/nexus` (the key decides the floor). API version `1.1.0`.
-- Floor: `HILLSBOROUGH`. Map version 4, 69 locations. Checksum `be3cc8f3e9134cb4dfe7d3ac41773bc5d231ed56b4a42c05f5939467d67c8c4f`.
+- Endpoint: `https://ankoqruedjujyefhrmtw.supabase.co/functions/v1/nexus` (the key decides the floor). API version `1.2.0`.
+- Floor: `HILLSBOROUGH`. Map version 5, 70 locations (66 pallet, 2 staging, the shared zone `RCV-OUT`, the dock). Checksum `91d76cdefd051ca8d4f4a45c425b98cd404e05b077816eb9b4e14252f872b191`. Shared zone: `STAGE2-ZONE-CONTRACT.md`.
 - `occupancy_state: "forward_only"`, `moves_enabled: true`.
 - The test floor `HILLSBOROUGH-TEST` is retired (2026-11-24). Every staging key now answers 401; remove `NEXUS_STAGING_API_KEY` from use.
 - Everything in `neutral/INTEGRATION-HANDOFF.md` (commit `a465b55`) still applies. This page adds the one new rule.
